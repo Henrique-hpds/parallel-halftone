@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <unordered_set>
+#include <filesystem>
 #include <iostream>
 #include <utility>
 #include <string>
@@ -100,86 +101,59 @@ void print_usage(const std::string& program_name, const std::unordered_set<std::
     std::cout << "\nExemplo:\n";
     std::cout << "  " << program_name << " -i ../img/city.png -m FloydSteinberg -g\n";
 }
-void haltone(cv::Mat& img, std::map<std::pair<int, int>, float>& kernel) {
-    int height = img.rows;
-    int width = img.cols;
-    int channels = img.channels();
 
-    cv::Mat saida;
-    cv::Mat imagem_float;
+void DitheringDifusionError(const cv::Mat& inputImage, cv::Mat& outputImage, const std::map<std::pair<int, int>, float>& metodo) {
+    int height = inputImage.rows;
+    int width = inputImage.cols;
+    int channels = inputImage.channels();
 
-    if (channels == 1) {
-        img.convertTo(imagem_float, CV_32FC1);
-        saida = cv::Mat::zeros(height, width, CV_8UC1);
-
-        for (int y = 0; y < height; ++y) {
-            bool esquerda_para_direita = (y % 2 == 0);
-            int x_start = esquerda_para_direita ? 0 : width - 1;
-            int x_end   = esquerda_para_direita ? width : -1;
-            int passo   = esquerda_para_direita ? 1 : -1;
-
-            for (int x = x_start; x != x_end; x += passo) {
-                float valor_pixel = imagem_float.at<float>(y, x);
-                uint8_t novo_valor = (valor_pixel < 128.0f) ? 0 : 255;
-                saida.at<uchar>(y, x) = novo_valor;
-
-                float erro = valor_pixel - novo_valor;
-
-                for (const auto& [offset, peso] : kernel) {
-                    int dx = offset.second;
-                    int dy = offset.first;
-                    int nx = x + dx;
-                    int ny = y + dy;
-
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                        imagem_float.at<float>(ny, nx) += erro * peso;
-                    }
-                }
-            }
-        }
-    } else {
-        img.convertTo(imagem_float, CV_32FC3);
-        saida = cv::Mat::zeros(height, width, CV_8UC3);
-
-        std::vector<cv::Mat> canais(3);
-        cv::split(imagem_float, canais);
-        std::vector<cv::Mat> canais_saida(3, cv::Mat::zeros(height, width, CV_8UC1));
-
-        for (int c = 0; c < 3; ++c) {
-            cv::Mat& f = canais[c];
-            cv::Mat& g = canais_saida[c];
-
-            for (int y = 0; y < height; ++y) {
-                bool esquerda_para_direita = (y % 2 == 0);
-                int x_start = esquerda_para_direita ? 0 : width - 1;
-                int x_end   = esquerda_para_direita ? width : -1;
-                int passo   = esquerda_para_direita ? 1 : -1;
-
-                for (int x = x_start; x != x_end; x += passo) {
-                    float valor_pixel = f.at<float>(y, x);
-                    uint8_t novo_valor = (valor_pixel < 128.0f) ? 0 : 255;
-                    g.at<uchar>(y, x) = novo_valor;
-
-                    float erro = valor_pixel - novo_valor;
-
-                    for (const auto& [offset, peso] : kernel) {
-                        int dx = offset.second;
-                        int dy = offset.first;
-                        int nx = x + dx;
-                        int ny = y + dy;
-
-                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                            f.at<float>(ny, nx) += erro * peso;
-                        }
-                    }
-                }
-            }
-        }
-        cv::merge(canais_saida, saida);
+    if (channels != 1 && channels != 3) {
+        std::cerr << "Número de canais não suportado: " << channels << std::endl;
+        return;
     }
 
-    cv::imshow("Imagem", saida);
-    cv::waitKey(0);
+    cv::Mat imagemFloat;
+    inputImage.convertTo(imagemFloat, (channels == 1 ? CV_32FC1 : CV_32FC3));
+    outputImage = cv::Mat::zeros(inputImage.size(), (channels == 1 ? CV_8UC1 : CV_8UC3));
+
+    for (int channel = 0; channel < channels; ++channel) {
+        cv::Mat f(height, width, CV_32FC1);
+
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x)
+                f.at<float>(y, x) = (channels == 1)
+                    ? imagemFloat.at<float>(y, x)
+                    : imagemFloat.at<cv::Vec3f>(y, x)[channel];
+
+        for (int y = 0; y < height; ++y) {
+            bool par = (y % 2 == 0);
+            int x_start = par ? 0 : width - 1;
+            int x_end = par ? width : -1;
+            int step = par ? 1 : -1;
+
+            for (int x = x_start; x != x_end; x += step) {
+                float val = f.at<float>(y, x);
+                int novo_val = (val < 128.0f) ? 0 : 255;
+
+                if (channels == 1)
+                    outputImage.at<uchar>(y, x) = static_cast<uchar>(novo_val);
+                else
+                    outputImage.at<cv::Vec3b>(y, x)[channel] = static_cast<uchar>(novo_val);
+
+                float erro = val - novo_val;
+
+                for (const auto& [offset, peso] : metodo) {
+                    int dy = offset.first;
+                    int dx = offset.second;
+                    int ny = y + dy;
+                    int nx = x + dx;
+
+                    if (0 <= ny && ny < height && 0 <= nx && nx < width)
+                        f.at<float>(ny, nx) += erro * peso;
+                }
+            }
+        }
+    }
 }
 
 int main(int argc, char** argv) {
@@ -205,28 +179,39 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    std::filesystem::path p(img_path);
+    std::string img_name = p.stem().string();
+
+    if (!std::filesystem::exists("../out/" + img_name))
+        std::filesystem::create_directories("../out/" + img_name);
+
+    std::cout << "Processando imagem " << img_path << " pelo método " << modo << "\n";
+
     std::map<std::pair<int, int>, float> dither_map = create_dither_map(modo);
     
     cv::Mat img;
-    if (grayscale)
-        img = cv::imread(img_path, cv::IMREAD_GRAYSCALE);
-    else
-        img = cv::imread(img_path, cv::IMREAD_COLOR);
-    
-    // img.convertTo(img, CV_32F);
+    cv::Mat resultado;
+    img = grayscale ? cv::imread(img_path, cv::IMREAD_GRAYSCALE): cv::imread(img_path, cv::IMREAD_COLOR);
 
     if (img.empty()) {
-        std::cerr << "Erro ao carregar a imagem!" << std::endl;
+        std::cerr << "Erro ao carregar a imagem! Verifique o caminho passado." << std::endl;
         return 1;
     }
 
-    haltone(img, dither_map);
+    DitheringDifusionError(img, resultado, dither_map);
+    
+    std::string label = grayscale ? modo + " Error Difusion (Grayscale) for " + img_name  : modo + " Error Difusion for " + img_name;
+    std::string nome_arquivo = grayscale ? modo + "Grayscale": modo;
+    std::string output_path = "../out/" + img_name + "/" + nome_arquivo + ".png";
+    
+    cv::imwrite(output_path, resultado);
 
-    const std::string win = "Imagem";
-    cv::imshow(win, img);
+    cv::imshow(label, resultado);
 
     // Loop: espera por tecla ou fechamento da janela
-    while (cv::waitKey(30) < 0 && cv::getWindowProperty(win, cv::WND_PROP_VISIBLE) >= 1);
+    while (cv::waitKey(30) < 0 && cv::getWindowProperty(label, cv::WND_PROP_VISIBLE) >= 1);
+
+    std::cout << "Imagem processada e salva como: " << output_path << std::endl;
 
     return 0;
 }
