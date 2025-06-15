@@ -90,35 +90,114 @@ std::map<std::pair<int, int>, float> create_dither_map(const std::string& modo) 
 }
 
 void print_usage(const std::string& program_name, const std::unordered_set<std::string>& modos_validos) {
-    std::cout << "Uso: " << program_name << " -i <imagem> -m <modo>\n";
-    std::cout << "Modos válidos:\n";
+    std::cout << "Uso: " << program_name << " -i <imagem> -m <modo> [-g]\n";
+    std::cout << "  -i <imagem>    Caminho para a imagem de entrada\n";
+    std::cout << "  -m <modo>      Modo de dithering a ser utilizado\n";
+    std::cout << "  -g             (Opcional) Ativa o modo escala de cinza\n";
+    std::cout << "\nModos válidos:\n";
     for (const auto& modo : modos_validos)
         std::cout << "  - " << modo << "\n";
+    std::cout << "\nExemplo:\n";
+    std::cout << "  " << program_name << " -i ../img/city.png -m FloydSteinberg -g\n";
 }
-
-void haltone(cv::Mat& img) {
-    cv::Mat g = cv::Mat::zeros(img.size(), img.type());
-
+void haltone(cv::Mat& img, std::map<std::pair<int, int>, float>& kernel) {
     int height = img.rows;
     int width = img.cols;
-    int canales = img.channels();
+    int channels = img.channels();
 
-    
+    cv::Mat saida;
+    cv::Mat imagem_float;
+
+    if (channels == 1) {
+        img.convertTo(imagem_float, CV_32FC1);
+        saida = cv::Mat::zeros(height, width, CV_8UC1);
+
+        for (int y = 0; y < height; ++y) {
+            bool esquerda_para_direita = (y % 2 == 0);
+            int x_start = esquerda_para_direita ? 0 : width - 1;
+            int x_end   = esquerda_para_direita ? width : -1;
+            int passo   = esquerda_para_direita ? 1 : -1;
+
+            for (int x = x_start; x != x_end; x += passo) {
+                float valor_pixel = imagem_float.at<float>(y, x);
+                uint8_t novo_valor = (valor_pixel < 128.0f) ? 0 : 255;
+                saida.at<uchar>(y, x) = novo_valor;
+
+                float erro = valor_pixel - novo_valor;
+
+                for (const auto& [offset, peso] : kernel) {
+                    int dx = offset.second;
+                    int dy = offset.first;
+                    int nx = x + dx;
+                    int ny = y + dy;
+
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                        imagem_float.at<float>(ny, nx) += erro * peso;
+                    }
+                }
+            }
+        }
+    } else {
+        img.convertTo(imagem_float, CV_32FC3);
+        saida = cv::Mat::zeros(height, width, CV_8UC3);
+
+        std::vector<cv::Mat> canais(3);
+        cv::split(imagem_float, canais);
+        std::vector<cv::Mat> canais_saida(3, cv::Mat::zeros(height, width, CV_8UC1));
+
+        for (int c = 0; c < 3; ++c) {
+            cv::Mat& f = canais[c];
+            cv::Mat& g = canais_saida[c];
+
+            for (int y = 0; y < height; ++y) {
+                bool esquerda_para_direita = (y % 2 == 0);
+                int x_start = esquerda_para_direita ? 0 : width - 1;
+                int x_end   = esquerda_para_direita ? width : -1;
+                int passo   = esquerda_para_direita ? 1 : -1;
+
+                for (int x = x_start; x != x_end; x += passo) {
+                    float valor_pixel = f.at<float>(y, x);
+                    uint8_t novo_valor = (valor_pixel < 128.0f) ? 0 : 255;
+                    g.at<uchar>(y, x) = novo_valor;
+
+                    float erro = valor_pixel - novo_valor;
+
+                    for (const auto& [offset, peso] : kernel) {
+                        int dx = offset.second;
+                        int dy = offset.first;
+                        int nx = x + dx;
+                        int ny = y + dy;
+
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            f.at<float>(ny, nx) += erro * peso;
+                        }
+                    }
+                }
+            }
+        }
+        cv::merge(canais_saida, saida);
+    }
+
+    cv::imshow("Imagem", saida);
+    cv::waitKey(0);
 }
 
 int main(int argc, char** argv) {
     std::string img_path;
     std::string modo;
     std::unordered_set<std::string> modos_validos = {"FloydSteinberg", "StevensonArce", "Burkes", "Sierra", "Stucki", "JarvisJudiceNinke"};
+    bool grayscale = false;
 
-    for (int i = 1; i < argc - 1; ++i) {
+    for (int i = 1; i < argc; ++i) {
         std::string flag = argv[i];
-        std::string valor = argv[i + 1];
 
-        if (flag == "-i") 
-            img_path = valor;
-        else if (flag == "-m")
-            modo = valor;
+        if (flag == "-i" && i + 1 < argc) {
+            img_path = argv[++i];
+        } else if (flag == "-m" && i + 1 < argc) {
+            modo = argv[++i];
+        } else if (flag == "-g") {
+            grayscale = true;
+        }
     }
 
     if (img_path.empty() || modo.empty() || modos_validos.find(modo) == modos_validos.end()) {
@@ -126,29 +205,28 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-   std::map<std::pair<int, int>, float> dither_map = create_dither_map(modo);
-
-    std::cout << "Dither map para o modo " << modo << ":\n";
-    for (const auto& kv : dither_map) {
-        auto [dx, dy] = kv.first;
-        std::cout << "(" << dx << ", " << dy << "): " << kv.second << "\n";
-    }
-
-    cv::Mat img = cv::imread(img_path, cv::IMREAD_GRAYSCALE);
+    std::map<std::pair<int, int>, float> dither_map = create_dither_map(modo);
+    
+    cv::Mat img;
+    if (grayscale)
+        img = cv::imread(img_path, cv::IMREAD_GRAYSCALE);
+    else
+        img = cv::imread(img_path, cv::IMREAD_COLOR);
+    
+    // img.convertTo(img, CV_32F);
 
     if (img.empty()) {
         std::cerr << "Erro ao carregar a imagem!" << std::endl;
         return 1;
     }
 
-    haltone(img);
+    haltone(img, dither_map);
 
     const std::string win = "Imagem";
     cv::imshow(win, img);
 
     // Loop: espera por tecla ou fechamento da janela
     while (cv::waitKey(30) < 0 && cv::getWindowProperty(win, cv::WND_PROP_VISIBLE) >= 1);
-
 
     return 0;
 }
