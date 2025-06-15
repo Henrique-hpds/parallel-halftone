@@ -1,0 +1,2 @@
+1. NÃO USAR O TERMINAL DO VSCODE SE VC BAIXOU ELE PELA SNAP!!!!!!!!!!!!!!!!!!!!
+    O OpenCV reclama por algum motivo
