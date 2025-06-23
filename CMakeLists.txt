@@ -17,8 +17,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 # ------------------------
 # Versão serial
-add_executable(serial src/serial.cpp)
-target_link_libraries(serial ${OpenCV_LIBS})
+add_executable(serial src/serial.c)
+target_link_libraries(serial ${OpenCV_LIBS} m)
 
 # ------------------------
 # Versão CUDA (main + CUDA kernel)
