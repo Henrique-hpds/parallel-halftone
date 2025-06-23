@@ -1,0 +1,61 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}           % Codificação UTF-8
+\usepackage[T1]{fontenc}              % Suporte a caracteres acentuados
+\usepackage[portuguese]{babel}        % Configuração para português
+\usepackage{amsmath}                  % Para equações matemáticas
+\usepackage{amssymb}                  % Símbolos matemáticos adicionais
+\usepackage{hyperref}                 % Para links e referências clicáveis
+\usepackage[margin=0.5in]{geometry}   % Para ajustar margens
+\usepackage{graphicx}                 % Para imagens
+\usepackage{float}                    % Para usar [H] nas tabelas
+\usepackage{algorithm}                % Para ambiente de algoritmo
+\usepackage{algorithmic}              % Para pseudocódigo
+\usepackage{xcolor}                   % Para colorir blocos de código
+\usepackage{listings}                 % Para formatar código
+\usepackage{minted}                   % Para blocos de código com destaque de sintaxe
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=black,
+    urlcolor=black,
+    citecolor=black,
+}
+
+\title{Projeto Final MC970 - Paralelização da Técnicas de Meios-Tons}
+\author{
+    Vinicius P. M. Miguel - RA260731 \\
+    Henrique Pareda de Souza - RA260497 \\
+    Raphael Salles Vitor de Souza - RA223641
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\renewcommand{\contentsname}{Sumário}
+\tableofcontents
+
+\section{Introdução}
+\input{chapters/introducao}
+
+\section{Formulação}
+\input{chapters/formulacao}
+
+\section{Implementação}
+\input{chapters/implementacao}
+
+\section{Speedup}
+\input{chapters/speedup}
+
+\section{Conclusão}
+\input{chapters/conclusao}
+
+%Referencias
+\newpage
+\bibliographystyle{ieeetr}
+\addcontentsline{toc}{section}{Referências}
+\bibliography{ieee}
+
+\end{document}

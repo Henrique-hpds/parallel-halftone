@@ -1,0 +1,26 @@
+Neste capítulo, apresentamos as três versões do código desenvolvidas para fins comparativos: uma versão serial, uma versão paralelizada utilizando OpenMP e uma versão implementada em CUDA. Cada uma dessas versões será explicada em detalhes nas subseções a seguir.
+
+\subsection{Versão Serial}
+
+    A versão serial do código, localizada no arquivo \texttt{serial.cpp}, foi implementada como ponto de partida para o desenvolvimento das versões paralelas. Nesta implementação, o algoritmo é executado de forma sequencial, processando os dados de entrada um elemento por vez. Essa abordagem é simples e direta, mas não aproveita os recursos de paralelismo disponíveis em arquiteturas modernas.
+
+    O código foi estruturado para ser claro e modular, facilitando a compreensão e a posterior paralelização. Ele realiza as seguintes etapas principais:
+    \begin{itemize}
+        \item Leitura dos dados de entrada.
+        \item Processamento sequencial dos dados, aplicando a técnica de meios-tons utilizando difusão de erro.
+        \item Escrita dos resultados no arquivo de saída.
+    \end{itemize}
+
+    O algoritmo de difusão de erro utilizado na versão serial é configurado para suportar diferentes métodos de dithering, como Floyd-Steinberg, Burkes, Sierra, entre outros. A escolha do método é feita com base em um parâmetro de entrada, permitindo flexibilidade na execução.
+
+    Essa versão serve como base para medir o desempenho inicial e comparar os ganhos obtidos com as versões paralelas. O código completo da implementação pode ser encontrado abaixo:
+
+\subsection{Versão Paralela com OpenMP}
+
+    A versão paralela utilizando OpenMP foi desenvolvida a partir da versão serial, com o objetivo de explorar o paralelismo em CPUs multicore. O código-fonte desta versão é essencialmente o mesmo da versão serial, diferindo apenas pela inclusão de diretivas de paralelização do OpenMP, que são ativadas em tempo de compilação. Os resultados e o impacto dessas alterações serão discutidos na \autoref{sec:speedup}.
+
+\subsection{Versão em CUDA}
+
+    A versão em CUDA, que será implementada no futuro, tem como objetivo explorar o paralelismo massivo oferecido por GPUs. Esta subseção será preenchida com os detalhes da implementação assim que o código estiver concluído.
+
+    \vspace{2cm} % Espaço em branco para a futura explicação da versão CUDA.
