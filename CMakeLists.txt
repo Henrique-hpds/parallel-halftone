@@ -5,26 +5,26 @@ project(MC970FinalProject)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# # CUDA (ativa suporte)
-# enable_language(CUDA)
-# set(CMAKE_CUDA_STANDARD 14)
+# CUDA
+enable_language(CUDA)
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Wno-c++17-extensions")
 
 # OpenCV
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # ------------------------
-# Serial
+# Versão serial
 add_executable(serial src/serial.cpp)
 target_link_libraries(serial ${OpenCV_LIBS})
 
-# # ------------------------
-# # OpenMP
-# find_package(OpenMP REQUIRED)
-# add_executable(versao_openmp openmp.cpp)
-# target_link_libraries(versao_openmp ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
-
-# # ------------------------
-# # CUDA
-# add_executable(versao_cuda cuda.cu)
-# target_link_libraries(versao_cuda ${OpenCV_LIBS})
+# ------------------------
+# Versão CUDA (main + CUDA kernel)
+add_executable(cuda_dithering
+    # src/main.cpp
+    src/parallel.cu
+)
+target_link_libraries(cuda_dithering ${OpenCV_LIBS})
+set_target_properties(cuda_dithering PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
