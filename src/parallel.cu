@@ -2,12 +2,11 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <fstream>
-#include <sstream>
 #include <omp.h>
+#include <cstring>
+#include "ppm.hpp"
+#include <unistd.h>
 
-#define WIDTH 8
-#define HEIGHT 8
 
 __device__ void apply_floyd_steinberg(float* image, int x, int y, int width, int height) {
     int idx = y * width + x;
@@ -25,8 +24,6 @@ __device__ void apply_floyd_steinberg(float* image, int x, int y, int width, int
     if (x + 1 < width && y + 1 < height)
         atomicAdd(&image[(y + 1) * width + (x + 1)], quant_error * 1.0f / 16.0f);
 }
-
-
 
 __device__ void get_coordinates_from_diagonal(int idx_in_diag, int diag, int width, int height, int* x, int* y) {
     int count = 0;
@@ -50,11 +47,9 @@ __global__ void process_diagonal(float* image, int diag, int width, int height) 
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int x, y;
     get_coordinates_from_diagonal(idx, diag, width, height, &x, &y);
-
     if (x >= 0 && y >= 0 && x < width && y < height) {
         apply_floyd_steinberg(image, x, y, width, height);
     }
-  }
 }
 
 int count_pixels_in_diagonal(int diag, int width, int height) {
@@ -62,117 +57,128 @@ int count_pixels_in_diagonal(int diag, int width, int height) {
     for (int i = 0; i <= diag; i++) {
         int x = i;
         int y = diag - i;
-        if (x < width && y < height) {
-            count++;
-        }
+        if (x < width && y < height) count++;
     }
     return count;
 }
 
-void savePGM(const std::string& filename, const std::vector<unsigned char>& image, int width, int height) {
-    std::ofstream file(filename, std::ios::binary);
-    if (!file) {
-        std::cerr << "Erro ao abrir o arquivo para escrita: " << filename << std::endl;
-        return;
-    }
-
-    // Escreve o cabeçalho PGM
-    file << "P5\n" << width << " " << height << "\n255\n";
-    file.write(reinterpret_cast<const char*>(image.data()), width * height);
-    file.close();
-}
-
-bool loadPGM(const std::string& filename, std::vector<unsigned char>& image, int& width, int& height) {
-    std::ifstream file(filename, std::ios::binary);
-    if (!file) {
-        std::cerr << "Erro ao abrir o arquivo: " << filename << std::endl;
-        return false;
-    }
-
-    std::string line;
-    // Ler mágica
-    std::getline(file, line);
-    if (line != "P5") {
-        std::cerr << "Formato inválido (não é P5)" << std::endl;
-        return false;
-    }
-
-    // Ignorar comentários
-    do {
-        std::getline(file, line);
-    } while (line[0] == '#');
-
-    // Ler dimensões
-    std::istringstream iss(line);
-    iss >> width >> height;
-
-    // Ler valor máximo (deve ser 255)
-    int maxVal;
-    file >> maxVal;
-    file.get(); // Consumir o '\n'
-
-    if (maxVal != 255) {
-        std::cerr << "Só suportado PGM com maxVal 255" << std::endl;
-        return false;
-    }
-
-    image.resize(width * height);
-    file.read(reinterpret_cast<char*>(image.data()), width * height);
-    return true;
-}
-
-int main() {
-    std::vector<unsigned char> hostImage;
-    int width, height;
-
-    // Carregar imagem PGM de entrada
-    if (!loadPGM("../sample_640_426.pgm", hostImage, width, height)) {
-        return -1;
-    }
-
-    const int imageSize = width * height;
-    std::vector<float> hostImageFloat(imageSize);
-
-    // Normalizar para 0.0 a 1.0 antes de enviar para GPU
-    for (int i = 0; i < imageSize; i++) {
-        hostImageFloat[i] = hostImage[i] / 255.0f;
-    }
-
-    // Alocar memória no device
-    float* deviceImage;
-    cudaMalloc(&deviceImage, imageSize * sizeof(float));
-    cudaMemcpy(deviceImage, hostImageFloat.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
-
+void process_channel(float* deviceChannel, int width, int height) {
     int maxDiagonals = width + height - 1;
-
-    double omp_start = omp_get_wtime();    
-
-    // Processar cada diagonal (wavefront)
-    for (int diag = 0; diag < maxDiagonals; diag++) {
+    for (int diag = 0; diag < maxDiagonals; ++diag) {
         int numPixels = count_pixels_in_diagonal(diag, width, height);
         int threadsPerBlock = 32;
         int blocks = (numPixels + threadsPerBlock - 1) / threadsPerBlock;
-
-        process_diagonal<<<blocks, threadsPerBlock>>>(deviceImage, diag, width, height);
+        process_diagonal<<<blocks, threadsPerBlock>>>(deviceChannel, diag, width, height);
         cudaDeviceSynchronize();
     }
+}
 
-    double omp_end = omp_get_wtime();
-    std::cout << "Tempo de execução dos kernels (OpenMP): " << (omp_end - omp_start) * 1000 << " ms" << std::endl;
-
-    // Copiar o resultado de volta
-    cudaMemcpy(hostImageFloat.data(), deviceImage, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
-
-    for (int i = 0; i < imageSize; i++) {
-        float clamped = fminf(fmaxf(hostImageFloat[i], 0.0f), 1.0f);
-        hostImage[i] = (clamped < 0.35f) ? 0 : 255;  // Força saída binária (preto ou branco)
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        std::cerr << "Uso: " << argv[0] << " [-g] <arquivo.ppm>" << std::endl;
+        return 1;
     }
 
-    // Salvar imagem final
-    savePGM("../output_cuda.pgm", hostImage, width, height);
-    std::cout << "Imagem salva como output.pgm" << std::endl;
+    bool grayscale = false;
+    const char* filename = nullptr;
 
-    // Limpeza
-    cudaFree(deviceImage);
+    if (strcmp(argv[1], "-g") == 0) {
+        grayscale = true;
+        if (argc < 3) {
+            std::cerr << "Faltando caminho para imagem PPM." << std::endl;
+            return 1;
+        }
+        filename = argv[2];
+    } else {
+        filename = argv[1];
+    }
+
+    PPMImage* colorImage = readPPM(filename);
+    if (!colorImage) {
+        std::cerr << "Erro ao carregar imagem PPM" << std::endl;
+        return -1;
+    }
+
+    int width = colorImage->x;
+    int height = colorImage->y;
+    const int imageSize = width * height;
+
+    double start = omp_get_wtime();
+
+    if (grayscale) {
+        std::vector<float> hostGray(imageSize);
+        for (int i = 0; i < imageSize; ++i) {
+            PPMPixel& p = colorImage->data[i];
+            hostGray[i] = (0.299f * p.red + 0.587f * p.green + 0.114f * p.blue) / 255.0f;
+        }
+
+        float* deviceGray;
+        cudaMalloc(&deviceGray, imageSize * sizeof(float));
+        cudaMemcpy(deviceGray, hostGray.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
+
+        process_channel(deviceGray, width, height);
+
+        cudaMemcpy(hostGray.data(), deviceGray, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaFree(deviceGray);
+
+        for (int i = 0; i < imageSize; ++i) {
+            unsigned char val = (hostGray[i] < 0.35f ? 0 : 255);
+            colorImage->data[i].red = val;
+            colorImage->data[i].green = val;
+            colorImage->data[i].blue = val;
+        }
+
+    } else {
+        // Colorido: processar R, G, B separadamente
+        std::vector<float> hostR(imageSize), hostG(imageSize), hostB(imageSize);
+        for (int i = 0; i < imageSize; ++i) {
+            hostR[i] = colorImage->data[i].red / 255.0f;
+            hostG[i] = colorImage->data[i].green / 255.0f;
+            hostB[i] = colorImage->data[i].blue / 255.0f;
+        }
+
+        float *deviceR, *deviceG, *deviceB;
+        cudaMalloc(&deviceR, imageSize * sizeof(float));
+        cudaMalloc(&deviceG, imageSize * sizeof(float));
+        cudaMalloc(&deviceB, imageSize * sizeof(float));
+
+        cudaMemcpy(deviceR, hostR.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(deviceG, hostG.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(deviceB, hostB.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
+
+        process_channel(deviceR, width, height);
+        process_channel(deviceG, width, height);
+        process_channel(deviceB, width, height);
+
+        cudaMemcpy(hostR.data(), deviceR, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(hostG.data(), deviceG, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(hostB.data(), deviceB, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
+
+        cudaFree(deviceR);
+        cudaFree(deviceG);
+        cudaFree(deviceB);
+
+        for (int i = 0; i < imageSize; ++i) {
+            colorImage->data[i].red   = (hostR[i] < 0.35f ? 0 : 255);
+            colorImage->data[i].green = (hostG[i] < 0.35f ? 0 : 255);
+            colorImage->data[i].blue  = (hostB[i] < 0.35f ? 0 : 255);
+        }
+    }
+
+    double end = omp_get_wtime();
+    std::cout << "Tempo de execução CUDA: " << (end - start) * 1000 << " ms" << std::endl;
+
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+      std::cout << "Diretório atual: " << cwd << std::endl;
+    } else {
+      perror("getcwd() error");
+    }
+
+    writePPM(colorImage, "out/output_cuda.ppm");
+    std::cout << "Imagem salva como out/output_cuda.ppm" << std::endl;
+
+    free(colorImage->data);
+    free(colorImage);
     return 0;
 }
