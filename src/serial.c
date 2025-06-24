@@ -134,73 +134,86 @@ DitherMetodo getDitherMetodo(const char* nome) {
 }
 
 void dithering_diffusion_diagonal(PPMImage* img, const DitherMetodo* metodo, int grayscale) {
-    int width = img->x;
-    int height = img->y;
-    int size = width * height;
+  int width = img->x;
+  int height = img->y;
+  int size = width * height;
 
-    float* red = (float*)malloc(size * sizeof(float));
-    float* green = (float*)malloc(size * sizeof(float));
-    float* blue = (float*)malloc(size * sizeof(float));
+  // Alocar memória para os canais de cor (vermelho, verde, azul)
+  float* red = (float*)malloc(size * sizeof(float));
+  float* green = (float*)malloc(size * sizeof(float));
+  float* blue = (float*)malloc(size * sizeof(float));
 
-    for (int i = 0; i < size; i++) {
-        red[i] = img->data[i].red;
-        green[i] = img->data[i].green;
-        blue[i] = img->data[i].blue;
-    }
+  // Inicializar os canais de cor com os valores dos pixels da imagem
+  for (int i = 0; i < size; i++) {
+    red[i] = img->data[i].red;
+    green[i] = img->data[i].green;
+    blue[i] = img->data[i].blue;
+  }
 
-    for (int diag = 0; diag <= width + height - 2; ++diag) {
-        for (int y = 0; y < height; ++y) {
-            int x = diag - y;
-            if (x < 0 || x >= width) continue;
+  //O kernel do cuda começa daqui pra baixo:
 
-            int idx = y * width + x;
+  // Processar a imagem diagonalmente
+  for (int diag = 0; diag <= width + height - 2; ++diag) {
+    for (int y = 0; y < height; ++y) {
+      int x = diag - y;
+      if (x < 0 || x >= width) continue;
 
-            float r = red[idx];
-            float g = green[idx];
-            float b = blue[idx];
+      int idx = y * width + x;
 
-            float val = grayscale ? (r * 0.3f + g * 0.59f + b * 0.11f) : 0;
+      // Cor original
+      float r = red[idx];
+      float g = green[idx];
+      float b = blue[idx];
 
-            int r_bin = grayscale ? 0 : (r < 128 ? 0 : 255);
-            int g_bin = grayscale ? 0 : (g < 128 ? 0 : 255);
-            int b_bin = grayscale ? 0 : (b < 128 ? 0 : 255);
-            int gray_bin = grayscale ? (val < 128 ? 0 : 255) : 0;
+      // Calcular o valor em escala de cinza, se necessário
+      float val = grayscale ? (r * 0.3f + g * 0.59f + b * 0.11f) : 0;
 
-            float r_err = r - r_bin;
-            float g_err = g - g_bin;
-            float b_err = b - b_bin;
-            float gray_err = val - gray_bin;
+      // Calcular a cor quantizada (0 ou 255)
+      int r_bin = grayscale ? 0 : (r < 128 ? 0 : 255);
+      int g_bin = grayscale ? 0 : (g < 128 ? 0 : 255);
+      int b_bin = grayscale ? 0 : (b < 128 ? 0 : 255);
+      int gray_bin = grayscale ? (val < 128 ? 0 : 255) : 0;
 
-            img->data[idx].red = grayscale ? gray_bin : r_bin;
-            img->data[idx].green = grayscale ? gray_bin : g_bin;
-            img->data[idx].blue = grayscale ? gray_bin : b_bin;
+      // Calcular o erro de quantização
+      float r_err = r - r_bin;
+      float g_err = g - g_bin;
+      float b_err = b - b_bin;
+      float gray_err = val - gray_bin;
 
-            for (int i = 0; i < metodo->tamanho; i++) {
-                int nx = x + metodo->elementos[i].dx;
-                int ny = y + metodo->elementos[i].dy;
+      // Definir o valor final para o pixel atual após o dithering
+      img->data[idx].red = grayscale ? gray_bin : r_bin;
+      img->data[idx].green = grayscale ? gray_bin : g_bin;
+      img->data[idx].blue = grayscale ? gray_bin : b_bin;
 
-                if (nx < 0 || ny < 0 || nx >= width || ny >= height)
-                    continue;
+      // Propagar o erro para os vizinhos
+      for (int i = 0; i < metodo->tamanho; i++) {
+        int nx = x + metodo->elementos[i].dx;
+        int ny = y + metodo->elementos[i].dy;
 
-                int nidx = ny * width + nx;
-                float peso = metodo->elementos[i].peso;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height)
+          continue;
 
-                if (grayscale) {
-                    float ngray = red[nidx] * 0.3f + green[nidx] * 0.59f + blue[nidx] * 0.11f;
-                    ngray += gray_err * peso;
-                    red[nidx] = green[nidx] = blue[nidx] = fminf(fmaxf(ngray, 0), 255);
-                } else {
-                    red[nidx] = fminf(fmaxf(red[nidx] + r_err * peso, 0), 255);
-                    green[nidx] = fminf(fmaxf(green[nidx] + g_err * peso, 0), 255);
-                    blue[nidx] = fminf(fmaxf(blue[nidx] + b_err * peso, 0), 255);
-                }
-            }
+        int nidx = ny * width + nx;
+        float peso = metodo->elementos[i].peso;
+
+        // Ajustar os canais de cor dos pixels vizinhos com o erro ponderado
+        if (grayscale) {
+          float ngray = red[nidx] * 0.3f + green[nidx] * 0.59f + blue[nidx] * 0.11f;
+          ngray += gray_err * peso;
+          red[nidx] = green[nidx] = blue[nidx] = fminf(fmaxf(ngray, 0), 255);
+        } else {
+          red[nidx] = fminf(fmaxf(red[nidx] + r_err * peso, 0), 255);
+          green[nidx] = fminf(fmaxf(green[nidx] + g_err * peso, 0), 255);
+          blue[nidx] = fminf(fmaxf(blue[nidx] + b_err * peso, 0), 255);
         }
+      }
     }
+  }
 
-    free(red);
-    free(green);
-    free(blue);
+  // Liberar a memória alocada para os canais de cor
+  free(red);
+  free(green);
+  free(blue);
 }
 
 

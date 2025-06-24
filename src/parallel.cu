@@ -20,6 +20,7 @@ typedef struct {
   PPMPixel *data;
 } PPMImage;
 
+// Parte do código para leitura e escrita da imagem
 
 static PPMImage *readPPM(const char *filename) {
   char buff[16];
@@ -103,6 +104,8 @@ void writePPM(PPMImage *img, const char* filename) {
     fclose(fp);
 }
 
+// _______________________________________________
+
 struct DitherElement {
     int dx, dy;
     float peso;
@@ -133,162 +136,205 @@ DitherMetodo getDitherMetodo(const char* nome) {
             }, 7
         };
     }
-    // Adicione os outros métodos aqui...
+    // TODO: Adicione os outros métodos aqui...
 
     return metodo;
 }
 
-// Kernel CUDA para converter imagem para escala de cinza
-__global__ void convertToGrayscaleKernel(PPMPixel* pixels, int width, int height) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    
-    if (x < width && y < height) {
-        int idx = IDX(x, y, width);
-        unsigned char gray = (unsigned char)(0.299f * pixels[idx].red + 
-                                            0.587f * pixels[idx].green + 
-                                            0.114f * pixels[idx].blue);
-        pixels[idx].red = gray;
-        pixels[idx].green = gray;
-        pixels[idx].blue = gray;
+#define CHECK_CUDA_ERROR(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line) {
+    if (code != cudaSuccess) {
+        fprintf(stderr, "CUDA error: %s %s %d\n", cudaGetErrorString(code), file, line);
+        exit(code);
     }
 }
 
 // Kernel CUDA para aplicar dithering diagonal
 __global__ void ditheringDiagonalKernel(PPMPixel* pixels, int width, int height, 
-                                       DitherElement* ditherElements, int numElements) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    
-    if (x < width && y < height) {
-        int idx = IDX(x, y, width);
+                     DitherElement* ditherElements, int numElements, int grayscale) {
+  // printf("[DEBUG] Dentro na função ditheringDiagonalKernel\n");
+  int x = blockIdx.x * blockDim.x + threadIdx.x;
+  int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-        // Cor original
-        float oldColor[3] = {
-            (float)pixels[idx].red,
-            (float)pixels[idx].green,
-            (float)pixels[idx].blue
-        };
+  if (x < width && y < height) {
+    int idx = IDX(x, y, width);
 
-        // Cor quantizada e erro de quantização
-        float newColor[3];
-        float quantizationError[3];
+    // Cor original
+    float r = (float)pixels[idx].red;
+    float g = (float)pixels[idx].green;
+    float b = (float)pixels[idx].blue;
 
-        // 1. Calcule a cor quantizada (0 ou 255)
-        for (int c = 0; c < 3; c++) {
-            newColor[c] = (oldColor[c] > 128) ? 255.0f : 0.0f; // Quantização em 2 tons (preto ou branco)
-            quantizationError[c] = oldColor[c] - newColor[c]; // Erro de quantização
-        }
+    // Calcular o valor em escala de cinza, se necessário
+    float val = grayscale ? (r * 0.3f + g * 0.59f + b * 0.11f) : 0;
 
-        // 2. Propague o erro para os vizinhos
-        for (int i = 0; i < numElements; i++) {
-            DitherElement element = ditherElements[i];
-            int nx = x + element.dx;
-            int ny = y + element.dy;
+    // Calcular a cor quantizada (0 ou 255)
+    int r_bin = grayscale ? (val < 128 ? 0 : 255) : (r < 128 ? 0 : 255);
+    int g_bin = grayscale ? (val < 128 ? 0 : 255) : (g < 128 ? 0 : 255);
+    int b_bin = grayscale ? (val < 128 ? 0 : 255) : (b < 128 ? 0 : 255);
+    int gray_bin = val < 128 ? 0 : 255;
 
-            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                int nidx = IDX(nx, ny, width);
-                for (int c = 0; c < 3; c++) {
-                    unsigned char* channel = (c == 0) ? &pixels[nidx].red :
-                                            (c == 1) ? &pixels[nidx].green :
-                                                       &pixels[nidx].blue;
+    // Calcular o erro de quantização
+    float r_err = r - r_bin;
+    float g_err = g - g_bin;
+    float b_err = b - b_bin;
+    float gray_err = val - gray_bin;
 
-                    // Ajustar o canal de cor do pixel vizinho com o erro ponderado
-                    float newValue = (float)(*channel) + quantizationError[c] * element.peso;
-                    newValue = fminf(255.0f, fmaxf(0.0f, newValue)); // Limitar entre 0 e 255
-                    *channel = (unsigned char)newValue; // Atualizar o valor do pixel vizinho
-                }
-            }
-        }
+    // Definir o valor final para o pixel atual após o dithering
+    pixels[idx].red = grayscale ? gray_bin : r_bin;
+    pixels[idx].green = grayscale ? gray_bin : g_bin;
+    pixels[idx].blue = grayscale ? gray_bin : b_bin;
 
-        // 3. Definir o valor final para o pixel atual após o dithering
-        pixels[idx].red   = (unsigned char)fminf(255.0f, fmaxf(0.0f, newColor[0]));
-        pixels[idx].green = (unsigned char)fminf(255.0f, fmaxf(0.0f, newColor[1]));
-        pixels[idx].blue  = (unsigned char)fminf(255.0f, fmaxf(0.0f, newColor[2]));
+    // Propagar o erro para os vizinhos
+    for (int i = 0; i < numElements; i++) {
+      int nx = x + ditherElements[i].dx;
+      int ny = y + ditherElements[i].dy;
+
+      if (nx < 0 || ny < 0 || nx >= width || ny >= height)
+        continue;
+
+      int nidx = IDX(nx, ny, width);
+      float peso = ditherElements[i].peso;
+
+      // Ajustar os canais de cor dos pixels vizinhos com o erro ponderado
+      if (grayscale) {
+        float ngray = pixels[nidx].red * 0.3f + pixels[nidx].green * 0.59f + pixels[nidx].blue * 0.11f;
+        ngray += gray_err * peso;
+        ngray = fminf(fmaxf(ngray, 0), 255);
+        pixels[nidx].red = pixels[nidx].green = pixels[nidx].blue = (unsigned char)ngray;
+      } else {
+        float new_r = fminf(fmaxf((float)pixels[nidx].red + r_err * peso, 0), 255);
+        float new_g = fminf(fmaxf((float)pixels[nidx].green + g_err * peso, 0), 255);
+        float new_b = fminf(fmaxf((float)pixels[nidx].blue + b_err * peso, 0), 255);
+
+        pixels[nidx].red = (unsigned char)new_r;
+        pixels[nidx].green = (unsigned char)new_g;
+        pixels[nidx].blue = (unsigned char)new_b;
+
+        // //teste de sanidade
+        // pixels[nidx].red = (unsigned char)255;
+        // pixels[nidx].green = (unsigned char)0;
+        // pixels[nidx].blue = (unsigned char)0;
+        // if (idx < 10) {
+        //   printf("[DEBUG] Pixel %d: Inicial (R: %d, G: %d, B: %d) -> Final (R: %d, G: %d, B: %d)\n",
+        //    idx, (int)r, (int)g, (int)b,
+        //    (int)pixels[idx].red, (int)pixels[idx].green, (int)pixels[idx].blue);
+        // }
+      }
     }
+  }
 }
 
+// __global__ void testKernel(PPMPixel* pixels, int width, int height) {
+//     int x = blockIdx.x * blockDim.x + threadIdx.x;
+//     int y = blockIdx.y * blockDim.y + threadIdx.y;
+//     if (x < width && y < height) {
+//         int idx = y * width + x;
+//         pixels[idx].red = 255;
+//         pixels[idx].green = 0;
+//         pixels[idx].blue = 0;
+//     }
+// }
+
+  // Define the missing grayscale conversion kernel
+  __global__ void convertToGrayscaleKernel(PPMPixel* pixels, int width, int height) {
+      int x = blockIdx.x * blockDim.x + threadIdx.x;
+      int y = blockIdx.y * blockDim.y + threadIdx.y;
+  
+      if (x < width && y < height) {
+          int idx = IDX(x, y, width);
+          unsigned char gray = (unsigned char)(0.3f * pixels[idx].red + 0.59f * pixels[idx].green + 0.11f * pixels[idx].blue);
+          pixels[idx].red = gray;
+          pixels[idx].green = gray;
+          pixels[idx].blue = gray;
+      }
+  }
 
 void run_dithering_diagonal_cuda(PPMImage* img, DitherMetodo* metodo, int grayscale) {
-  PPMPixel* d_pixels = nullptr;
-  DitherElement* d_ditherElements = nullptr;
-  
-  // Alocar memória na GPU
-  size_t imageSize = img->x * img->y * sizeof(PPMPixel);
-  size_t ditherSize = metodo->tamanho * sizeof(DitherElement);
-  
-  cudaError_t err;
-  err = cudaMalloc((void**)&d_pixels, imageSize);
-  if (err != cudaSuccess) {
-    fprintf(stderr, "Erro ao alocar memória para pixels na GPU: %s\n", cudaGetErrorString(err));
-    return;
-  }
-  
-  err = cudaMalloc((void**)&d_ditherElements, ditherSize);
-  if (err != cudaSuccess) {
-    fprintf(stderr, "Erro ao alocar memória para elementos de dithering na GPU: %s\n", cudaGetErrorString(err));
-    cudaFree(d_pixels);
-    return;
-  }
-  
-  // Copiar dados para a GPU
-  err = cudaMemcpy(d_pixels, img->data, imageSize, cudaMemcpyHostToDevice);
-  if (err != cudaSuccess) {
-    fprintf(stderr, "Erro ao copiar pixels para a GPU: %s\n", cudaGetErrorString(err));
-    cudaFree(d_pixels);
-    cudaFree(d_ditherElements);
-    return;
-  }
-  
-  err = cudaMemcpy(d_ditherElements, metodo->elementos, ditherSize, cudaMemcpyHostToDevice);
-  if (err != cudaSuccess) {
-    fprintf(stderr, "Erro ao copiar elementos de dithering para a GPU: %s\n", cudaGetErrorString(err));
-    cudaFree(d_pixels);
-    cudaFree(d_ditherElements);
-    return;
-  }
-  
-  // Configurar dimensões do grid e blocos
-  dim3 blockSize(16, 16);
-  dim3 gridSize((img->x + blockSize.x - 1) / blockSize.x, 
-          (img->y + blockSize.y - 1) / blockSize.y);
-  
-  // Converter para escala de cinza se necessário
-  if (grayscale) {
-    convertToGrayscaleKernel<<<gridSize, blockSize>>>(d_pixels, img->x, img->y);
-    err = cudaDeviceSynchronize();
+    PPMPixel* d_pixels = nullptr;
+    DitherElement* d_ditherElements = nullptr;
+
+    size_t imageSize = img->x * img->y * sizeof(PPMPixel);
+    size_t ditherSize = metodo->tamanho * sizeof(DitherElement);
+
+    printf("[DEBUG] Alocando memória na GPU\n");
+
+    cudaError_t err;
+    err = cudaMalloc((void**)&d_pixels, imageSize);
     if (err != cudaSuccess) {
-      fprintf(stderr, "Erro ao executar kernel de conversão para escala de cinza: %s\n", cudaGetErrorString(err));
-      cudaFree(d_pixels);
-      cudaFree(d_ditherElements);
-      return;
+        fprintf(stderr, "Erro ao alocar memória para pixels na GPU: %s\n", cudaGetErrorString(err));
+        return;
     }
-  }
-  
-  // Aplicar dithering diagonal
-  ditheringDiagonalKernel<<<gridSize, blockSize>>>(d_pixels, img->x, img->y, 
-                          d_ditherElements, metodo->tamanho);
-  err = cudaDeviceSynchronize();
-  if (err != cudaSuccess) {
-    fprintf(stderr, "Erro ao executar kernel de dithering diagonal: %s\n", cudaGetErrorString(err));
+
+    err = cudaMalloc((void**)&d_ditherElements, ditherSize);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Erro ao alocar memória para elementos de dithering na GPU: %s\n", cudaGetErrorString(err));
+        cudaFree(d_pixels);
+        return;
+    }
+
+    printf("[DEBUG] Copiando pixels para a GPU\n");
+    err = cudaMemcpy(d_pixels, img->data, imageSize, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Erro ao copiar pixels para a GPU: %s\n", cudaGetErrorString(err));
+        cudaFree(d_pixels);
+        cudaFree(d_ditherElements);
+        return;
+    }
+
+    printf("[DEBUG] Copiando elementos de dithering para a GPU\n");
+    err = cudaMemcpy(d_ditherElements, metodo->elementos, ditherSize, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Erro ao copiar elementos de dithering para a GPU: %s\n", cudaGetErrorString(err));
+        cudaFree(d_pixels);
+        cudaFree(d_ditherElements);
+        return;
+    }
+
+    dim3 blockSize(16, 16);
+    dim3 gridSize((img->x + blockSize.x - 1) / blockSize.x, (img->y + blockSize.y - 1) / blockSize.y);
+
+    if (grayscale) {
+        printf("[DEBUG] Convertendo para escala de cinza\n");
+        convertToGrayscaleKernel<<<gridSize, blockSize>>>(d_pixels, img->x, img->y);
+        err = cudaDeviceSynchronize();
+        if (err != cudaSuccess) {
+            fprintf(stderr, "Erro ao executar kernel de conversão para escala de cinza: %s\n", cudaGetErrorString(err));
+            cudaFree(d_pixels);
+            cudaFree(d_ditherElements);
+            return;
+        }
+    }
+
+    printf("[DEBUG] Executando kernel de dithering diagonal\n");
+    ditheringDiagonalKernel<<<gridSize, blockSize>>>(d_pixels, img->x, img->y, d_ditherElements, metodo->tamanho, grayscale);
+    // testKernel<<<gridSize, blockSize>>>(d_pixels, img->x, img->y);
+    CHECK_CUDA_ERROR(cudaGetLastError());
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+    err = cudaDeviceSynchronize();
+    printf("[DEBUG] Saindo kernel de dithering diagonal\n");
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Erro ao executar kernel de dithering diagonal: %s\n", cudaGetErrorString(err));
+        cudaFree(d_pixels);
+        cudaFree(d_ditherElements);
+        return;
+    }
+
+    printf("[DEBUG] Copiando resultado de volta para a CPU\n");
+    err = cudaMemcpy(img->data, d_pixels, imageSize, cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Erro ao copiar pixels da GPU para a CPU: %s\n", cudaGetErrorString(err));
+    }
+
+    printf("[DEBUG] Liberando memória da GPU\n");
     cudaFree(d_pixels);
     cudaFree(d_ditherElements);
-    return;
-  }
-  
-  // Copiar resultado de volta para a CPU
-  err = cudaMemcpy(img->data, d_pixels, imageSize, cudaMemcpyDeviceToHost);
-  if (err != cudaSuccess) {
-    fprintf(stderr, "Erro ao copiar pixels da GPU para a CPU: %s\n", cudaGetErrorString(err));
-  }
-  
-  // Liberar memória da GPU
-  cudaFree(d_pixels);
-  cudaFree(d_ditherElements);
 }
 
-// Função para substituir a função original (mantida para compatibilidade)
+
+// Função de tempo
 void dithering_diffusion_diagonal(PPMImage* img, DitherMetodo* metodo, int grayscale) {
+    printf("[DEBUG] Iniciando cronometragem da GPU\n");
+
     cudaEvent_t start, stop;
     float milliseconds = 0;
 
@@ -309,6 +355,7 @@ void dithering_diffusion_diagonal(PPMImage* img, DitherMetodo* metodo, int grays
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 }
+
 
 int main(int argc, char* argv[]) {
     if (argc < 5) {

@@ -11,6 +11,9 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Wno-c++17-extensions")
 
+# CUDA architectures (T4 = compute_75)
+set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89 90)
+
 # OpenCV
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
