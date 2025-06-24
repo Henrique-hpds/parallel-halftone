@@ -11,5 +11,5 @@ add_executable(floydsteinberg_serial serial.cpp)
 target_link_libraries(floydsteinberg_serial PRIVATE OpenMP::OpenMP_CXX)
 
 # Executável CUDA Paralelo
-add_executable(floydsteinberg_parallel cu.cu)
+add_executable(floydsteinberg_parallel parallel.cu)
 target_link_libraries(floydsteinberg_parallel PRIVATE OpenMP::OpenMP_CXX)
