@@ -1,0 +1,69 @@
+\label{sec:speedup}
+
+Nesta seção, apresentamos as métricas de Speedup obtidas durante os experimentos. O Speedup é calculado como a razão entre o tempo de execução da versão serial e o tempo de execução das versões paralelas (OpenMP e CUDA). Foram consideradas duas abordagens principais:
+
+\begin{itemize}
+    \item \textbf{Speedup por Método:} Para cada método de dithering (\textit{FloydSteinberg}, \textit{StevensonArce}, \textit{Burkes}, \textit{Sierra}, \textit{Stucki}, \textit{JarvisJudiceNinke}), calculamos o Speedup médio considerando todas as imagens processadas.
+    \item \textbf{Speedup por Tamanho de Imagem:} Para cada tamanho de imagem (\textit{e.g.}, 1920x1080, 1280x720), calculamos o Speedup médio considerando todos os métodos de dithering aplicados.
+\end{itemize}
+
+Os resultados obtidos estão destacados nas Tabelas~\ref{tab:speedup_methods} e~\ref{tab:speedup_sizes}. Os campos em vermelho indicam os valores que ainda precisam ser preenchidos com os dados experimentais.
+
+\begin{table}[H]
+\centering
+\caption{Resultados de Speedup por Método}
+\label{tab:speedup_methods}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\textbf{Método} & \textbf{Serial (s)} & \textbf{OpenMP (s)} & \textbf{CUDA (s)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
+FloydSteinberg & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+StevensonArce & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+Burkes & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+Sierra & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+Stucki & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Resultados de Speedup por Tamanho de Imagem}
+\label{tab:speedup_sizes}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\textbf{Tamanho da Imagem} & \textbf{Serial (s)} & \textbf{OpenMP (s)} & \textbf{CUDA (s)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
+800x600 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+1280x720 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+1920x1080 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[H]
+\centering
+\caption{Resultados de Eficiência por Método}
+\label{tab:efficiency_methods}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Método} & \textbf{Eficiência OpenMP} & \textbf{Eficiência CUDA} \\ \hline
+FloydSteinberg & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+StevensonArce & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+Burkes & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+Sierra & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+Stucki & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Resultados de Eficiência por Tamanho de Imagem}
+\label{tab:efficiency_sizes}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Tamanho da Imagem} & \textbf{Eficiência OpenMP} & \textbf{Eficiência CUDA} \\ \hline
+800x600 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+1280x720 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+1920x1080 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+\end{tabular}
+\end{table}
