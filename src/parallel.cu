@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <omp.h>
+#include <cstring>
 #include "ppm.hpp"
 
 __device__ void apply_floyd_steinberg(float* image, int x, int y, int width, int height) {
@@ -59,8 +60,38 @@ int count_pixels_in_diagonal(int diag, int width, int height) {
     return count;
 }
 
-int main() {
-    PPMImage* colorImage = readPPM("../img/vazio_roxo.ppm");
+void process_channel(float* deviceChannel, int width, int height) {
+    int maxDiagonals = width + height - 1;
+    for (int diag = 0; diag < maxDiagonals; ++diag) {
+        int numPixels = count_pixels_in_diagonal(diag, width, height);
+        int threadsPerBlock = 32;
+        int blocks = (numPixels + threadsPerBlock - 1) / threadsPerBlock;
+        process_diagonal<<<blocks, threadsPerBlock>>>(deviceChannel, diag, width, height);
+        cudaDeviceSynchronize();
+    }
+}
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        std::cerr << "Uso: " << argv[0] << " [-g] <arquivo.ppm>" << std::endl;
+        return 1;
+    }
+
+    bool grayscale = false;
+    const char* filename = nullptr;
+
+    if (strcmp(argv[1], "-g") == 0) {
+        grayscale = true;
+        if (argc < 3) {
+            std::cerr << "Faltando caminho para imagem PPM." << std::endl;
+            return 1;
+        }
+        filename = argv[2];
+    } else {
+        filename = argv[1];
+    }
+
+    PPMImage* colorImage = readPPM(filename);
     if (!colorImage) {
         std::cerr << "Erro ao carregar imagem PPM" << std::endl;
         return -1;
@@ -70,49 +101,74 @@ int main() {
     int height = colorImage->y;
     const int imageSize = width * height;
 
-    std::vector<float> hostImageFloat(imageSize);
-
-    // Converter para escala de cinza
-    for (int i = 0; i < imageSize; ++i) {
-        PPMPixel& p = colorImage->data[i];
-        hostImageFloat[i] = (0.299f * p.red + 0.587f * p.green + 0.114f * p.blue) / 255.0f;
-    }
-
-    // CUDA malloc + cópia
-    float* deviceImage;
-    cudaMalloc(&deviceImage, imageSize * sizeof(float));
-    cudaMemcpy(deviceImage, hostImageFloat.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
-
     double start = omp_get_wtime();
 
-    int maxDiagonals = width + height - 1;
-    for (int diag = 0; diag < maxDiagonals; ++diag) {
-        int numPixels = count_pixels_in_diagonal(diag, width, height);
-        int threadsPerBlock = 32;
-        int blocks = (numPixels + threadsPerBlock - 1) / threadsPerBlock;
+    if (grayscale) {
+        std::vector<float> hostGray(imageSize);
+        for (int i = 0; i < imageSize; ++i) {
+            PPMPixel& p = colorImage->data[i];
+            hostGray[i] = (0.299f * p.red + 0.587f * p.green + 0.114f * p.blue) / 255.0f;
+        }
 
-        process_diagonal<<<blocks, threadsPerBlock>>>(deviceImage, diag, width, height);
-        cudaDeviceSynchronize();
+        float* deviceGray;
+        cudaMalloc(&deviceGray, imageSize * sizeof(float));
+        cudaMemcpy(deviceGray, hostGray.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
+
+        process_channel(deviceGray, width, height);
+
+        cudaMemcpy(hostGray.data(), deviceGray, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaFree(deviceGray);
+
+        for (int i = 0; i < imageSize; ++i) {
+            unsigned char val = (hostGray[i] < 0.35f ? 0 : 255);
+            colorImage->data[i].red = val;
+            colorImage->data[i].green = val;
+            colorImage->data[i].blue = val;
+        }
+
+    } else {
+        // Colorido: processar R, G, B separadamente
+        std::vector<float> hostR(imageSize), hostG(imageSize), hostB(imageSize);
+        for (int i = 0; i < imageSize; ++i) {
+            hostR[i] = colorImage->data[i].red / 255.0f;
+            hostG[i] = colorImage->data[i].green / 255.0f;
+            hostB[i] = colorImage->data[i].blue / 255.0f;
+        }
+
+        float *deviceR, *deviceG, *deviceB;
+        cudaMalloc(&deviceR, imageSize * sizeof(float));
+        cudaMalloc(&deviceG, imageSize * sizeof(float));
+        cudaMalloc(&deviceB, imageSize * sizeof(float));
+
+        cudaMemcpy(deviceR, hostR.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(deviceG, hostG.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(deviceB, hostB.data(), imageSize * sizeof(float), cudaMemcpyHostToDevice);
+
+        process_channel(deviceR, width, height);
+        process_channel(deviceG, width, height);
+        process_channel(deviceB, width, height);
+
+        cudaMemcpy(hostR.data(), deviceR, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(hostG.data(), deviceG, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(hostB.data(), deviceB, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
+
+        cudaFree(deviceR);
+        cudaFree(deviceG);
+        cudaFree(deviceB);
+
+        for (int i = 0; i < imageSize; ++i) {
+            colorImage->data[i].red   = (hostR[i] < 0.35f ? 0 : 255);
+            colorImage->data[i].green = (hostG[i] < 0.35f ? 0 : 255);
+            colorImage->data[i].blue  = (hostB[i] < 0.35f ? 0 : 255);
+        }
     }
 
     double end = omp_get_wtime();
     std::cout << "Tempo de execução CUDA: " << (end - start) * 1000 << " ms" << std::endl;
 
-    cudaMemcpy(hostImageFloat.data(), deviceImage, imageSize * sizeof(float), cudaMemcpyDeviceToHost);
-
-    // Binarizar e salvar no formato PPM
-    for (int i = 0; i < imageSize; ++i) {
-        float clamped = fminf(fmaxf(hostImageFloat[i], 0.0f), 1.0f);
-        unsigned char bin = (clamped < 0.35f) ? 0 : 255;
-        colorImage->data[i].red = bin;
-        colorImage->data[i].green = bin;
-        colorImage->data[i].blue = bin;
-    }
-
     writePPM(colorImage, "../out/output_cuda.ppm");
-    std::cout << "Imagem salva como output_cuda.ppm" << std::endl;
+    std::cout << "Imagem salva como ../out/output_cuda.ppm" << std::endl;
 
-    cudaFree(deviceImage);
     free(colorImage->data);
     free(colorImage);
     return 0;
