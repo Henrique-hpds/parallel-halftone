@@ -115,8 +115,13 @@ __global__ void floyd_steinberg_kernel(
 void process_stochastic(float* d_image, int width, int height, float p = DEFAULT_P) {
     dim3 threads(BLOCK_SIZE, BLOCK_SIZE);
     dim3 blocks((width + BLOCK_SIZE - 1) / BLOCK_SIZE, (height + BLOCK_SIZE - 1) / BLOCK_SIZE);
+
+    double start = omp_get_wtime();
     floyd_steinberg_kernel<<<blocks, threads>>>(d_image, width, height, p);
     cudaDeviceSynchronize();
+    double end = omp_get_wtime();
+
+    std::cout << "CUDA execution time: " << (end - start) * 1000 << " ms" << std::endl;
 }
 
 int main(int argc, char* argv[]) {

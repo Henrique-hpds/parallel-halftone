@@ -250,7 +250,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+
     dithering_diffusion_diagonal(img, &metodo, grayscale);
+
+    gettimeofday(&end, NULL);
+    double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
+    printf("Serial execution time: %.2f ms\n", elapsed_time * 1000);
     writePPM(img, "output.ppm");
 
     free(img->data);
