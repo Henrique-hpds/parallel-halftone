@@ -6,10 +6,16 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenMP REQUIRED)
 
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
 # Executável Serial (compila apenas com C++)
-add_executable(floydsteinberg_serial src/serial.cpp)
-target_link_libraries(floydsteinberg_serial PRIVATE OpenMP::OpenMP_CXX)
+add_executable(serial src/serial.cpp lib/ppm.cpp)
+target_link_libraries(serial PRIVATE OpenMP::OpenMP_CXX)
+
+# Executável OpenMP Paralelo
+add_executable(omp src/omp.cpp lib/ppm.cpp)
+target_link_libraries(omp PRIVATE OpenMP::OpenMP_CXX)
 
 # Executável CUDA Paralelo
-add_executable(floydsteinberg_parallel src/parallel.cu src/ppm.cpp)
-target_link_libraries(floydsteinberg_parallel PRIVATE OpenMP::OpenMP_CXX)
+add_executable(cuda src/cuda.cu lib/ppm.cpp)
+target_link_libraries(cuda PRIVATE OpenMP::OpenMP_CXX)
