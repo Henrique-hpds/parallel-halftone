@@ -13,7 +13,7 @@ Implementação serial do algoritmo de Floyd-Steinberg, com opção estocástica
 ### omp.cpp
 Implementação paralela usando OpenMP, também com opção estocástica.
 
-### cuda.cu (executável: parallel)
+### cuda.cu
 Implementação CUDA do algoritmo, com suporte a modo padrão e estocástico.
 
 ---
