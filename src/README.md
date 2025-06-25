@@ -26,7 +26,7 @@ Todos os programas esperam imagens no formato PPM (P6).
 - `[stochastic=1]`: (Opcional) 1 para modo estocástico, 0 para Floyd-Steinberg clássico (default: 1)
 - `-g`: (Opcional) Converte a imagem para escala de cinza antes de processar
 
-### Exemplos de execução
+### Exemplos Utilizados para execução
 
 #### Serial
 ```
@@ -40,17 +40,17 @@ Todos os programas esperam imagens no formato PPM (P6).
 ./omp ../img/vazio_roxo.ppm ../out/omp_stochastic.ppm 0.5 1
 ```
 
-#### CUDA (parallel)
+#### CUDA
 ```
-./parallel ../img/vazio_roxo.ppm ../out/cuda_normal 0.5 0
-./parallel ../img/vazio_roxo.ppm ../out/cuda_stochastic 0.5 1
+./cuda ../img/vazio_roxo.ppm ../out/cuda_normal.ppm 5 0
+./cuda ../img/vazio_roxo.ppm ../out/cuda_stochastic.ppm 5 1
 ```
 
 #### Opção para escala de cinza
 ```
 ./serial ../img/vazio_roxo.ppm ../out/serial_gray.ppm 0.5 1 -g
 ./omp ../img/vazio_roxo.ppm ../out/omp_gray.ppm 0.5 1 -g
-./parallel ../img/vazio_roxo.ppm ../out/cuda_gray 0.5 1 -g
+./cuda ../img/vazio_roxo.ppm ../out/cuda_gray.ppm 0.5 1 -g
 ```
 
 ---
