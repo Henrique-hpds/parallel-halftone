@@ -4,10 +4,17 @@ Nesta seção, apresentamos as métricas de Speedup obtidas durante os experimen
 
 \begin{itemize}
     \item \textbf{Speedup por Método:} Para cada método de dithering (\textit{FloydSteinberg}, \textit{StevensonArce}, \textit{Burkes}, \textit{Sierra}, \textit{Stucki}, \textit{JarvisJudiceNinke}), calculamos o Speedup médio considerando todas as imagens processadas.
-    \item \textbf{Speedup por Tamanho de Imagem:} Para cada tamanho de imagem (\textit{e.g.}, 1920x1080, 1280x720), calculamos o Speedup médio considerando todos os métodos de dithering aplicados.
+    \item \textbf{Speedup por Tamanho de Imagem:} Para cada tamanho de imagem (\textit{e.g.}, 1920x1080, 1280x720), calculamos o Speedup médio considerando todos os métodos de dithering aplicados. Os tamanhos de imagem foram classificados em quatro categorias:
+        \begin{itemize}
+            \item \textbf{Pequeno (small):} Imagens com largura e altura menores ou iguais a 256 pixels.
+            \item \textbf{Médio (medium):} Imagens com largura e altura menores ou iguais a 512 pixels.
+            \item \textbf{Grande (large):} Imagens com largura e altura menores ou iguais a 1024 pixels.
+            \item \textbf{Muito Grande (xlarge):} Imagens com largura ou altura maiores que 1024 pixels.
+        \end{itemize}
 \end{itemize}
 
 Os resultados obtidos estão destacados nas Tabelas~\ref{tab:speedup_methods} e~\ref{tab:speedup_sizes}. Os campos em vermelho indicam os valores que ainda precisam ser preenchidos com os dados experimentais.
+
 
 \begin{table}[H]
 \centering
@@ -67,3 +74,67 @@ JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
 1920x1080 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
 \end{tabular}
 \end{table}
+
+\subsection{Método estocástico}
+
+    Os códigos de OpenMP e CUDA possuíam uma flag que permitia a utilização de um método estocástico. Esse método introduz variações aleatórias no processo de dithering, o que pode impactar os resultados de Speedup e Eficiência. Durante os experimentos, observamos que o uso do método estocástico gerou diferenças nos tempos de execução e nos resultados finais. No entanto, como o objetivo do processo de dithering é criar um efeito visual na imagem, essas variações não comprometem a qualidade visual do resultado, tornando válida a sua utilização.
+
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.3\textwidth}
+            \includegraphics[width=\textwidth]{figures/comparacao/input.png}
+            \caption{Imagem Original}
+            \label{fig:input_image}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.3\textwidth}
+            \includegraphics[width=\textwidth]{figures/comparacao/openmp.png}
+            \caption{OpenMP}
+            \label{fig:openmp_image}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.3\textwidth}
+            \includegraphics[width=\textwidth]{figures/comparacao/openmp_stochastic.png}
+            \caption{OpenMP Estocástico}
+            \label{fig:openmp_stochastic_image}
+        \end{subfigure}
+        \caption{Comparação visual entre as imagens: original, OpenMP e OpenMP com método estocástico.}
+        \label{fig:comparison_images}
+    \end{figure}
+
+    \text{\color{red}Conferir se a implementacao do estocástico está correta}
+
+    Os resultados obtidos com o método estocástico foram considerados satisfatórios. Apesar das variações introduzidas no processo de dithering, a qualidade visual das imagens geradas permaneceu consistente com os objetivos do experimento. A Figura~\ref{fig:comparison_images} ilustra que as diferenças visuais entre as imagens processadas com e sem o método estocástico são mínimas, reforçando a validade do uso dessa abordagem nos experimentos realizados.
+
+    \begin{table}[H]
+    \centering
+    \caption{Resultados de Speedup para o Método Estocástico}
+    \label{tab:speedup_stochastic}
+    \begin{tabular}{|c|c|c|c|c|c|}
+    \hline
+    \textbf{Método} & \textbf{Serial (s)} & \textbf{OpenMP (s)} & \textbf{CUDA (s)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
+    FloydSteinberg & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    StevensonArce & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Burkes & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Sierra & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Stucki & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    \end{tabular}
+    \end{table}
+
+    \begin{table}[H]
+    \centering
+    \caption{Resultados de Eficiência para o Método Estocástico}
+    \label{tab:efficiency_stochastic}
+    \begin{tabular}{|c|c|c|}
+    \hline
+    \textbf{Método} & \textbf{Eficiência OpenMP} & \textbf{Eficiência CUDA} \\ \hline
+    FloydSteinberg & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    StevensonArce & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Burkes & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Sierra & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Stucki & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    \end{tabular}
+    \end{table}

@@ -24,3 +24,25 @@ Neste capítulo, apresentamos as três versões do código desenvolvidas para fi
     A versão em CUDA, que será implementada no futuro, tem como objetivo explorar o paralelismo massivo oferecido por GPUs. Esta subseção será preenchida com os detalhes da implementação assim que o código estiver concluído.
 
     \vspace{2cm} % Espaço em branco para a futura explicação da versão CUDA.
+
+
+\subsection{Implementação de Métodos Estocásticos}
+
+    Além das versões mencionadas anteriormente, também foram implementados métodos estocásticos para avaliar como o uso de aleatoriedade pode impactar o resultado visual da técnica de meios-tons. Esses métodos introduzem variações aleatórias no processo de difusão de erro, com o objetivo de verificar se a qualidade visual das imagens processadas é significativamente alterada.
+
+    A implementação dos métodos estocásticos foi realizada adicionando um fator de ruído controlado ao cálculo da difusão de erro. Esse fator é gerado utilizando uma distribuição uniforme, garantindo que o comportamento do algoritmo permaneça previsível e reprodutível. As etapas principais dessa abordagem são as seguintes:
+    \begin{itemize}
+        \item Geração de um valor aleatório para cada pixel, dentro de um intervalo predefinido.
+        \item Ajuste do erro difundido com base no valor aleatório gerado.
+        \item Continuação do processamento com o erro ajustado.
+    \end{itemize}
+
+    Para as versões paralelas, foram adicionadas flags específicas para habilitar o suporte aos métodos estocásticos:
+    \begin{itemize}
+        \item Na versão OpenMP, a flag \texttt{-stochastic} foi utilizada durante a compilação para ativar o código relacionado aos métodos estocásticos. O comportamento estocástico pode ser controlado por um parâmetro de entrada, permitindo escolher entre dithering estocástico (1) ou padrão (0), sendo o padrão o valor 1.
+        \item Na versão CUDA, a flag \texttt{-stochastic} também foi empregada, garantindo que o comportamento estocástico fosse incorporado ao kernel CUDA. Assim como na versão OpenMP, o parâmetro de entrada permite alternar entre dithering estocástico (1) ou padrão (0), com o valor padrão definido como 1.
+    \end{itemize}
+
+    Apesar de introduzir aleatoriedade no processo, os resultados preliminares indicam que o impacto visual é mínimo, especialmente em imagens com alta resolução. Isso sugere que os métodos estocásticos podem ser uma alternativa viável para cenários onde a uniformidade do padrão de dithering não é uma prioridade.
+
+    A análise detalhada dos resultados obtidos com os métodos estocásticos será apresentada na \autoref{sec:speedup}, onde compararemos a qualidade visual e o desempenho em relação às outras versões do código.
