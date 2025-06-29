@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(FloydSteinbergHalftone LANGUAGES C CXX CUDA)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # OpenMP
