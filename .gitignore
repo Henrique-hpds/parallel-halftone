@@ -1,7 +1,14 @@
 build
 .vscode
 out
-
+logs
+venv
+.venv
+**venv**
+**.venv**
+**env**
+**.env**
+**__pycache__**
 
 # latex
 *.aux

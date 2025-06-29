@@ -7,10 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # OpenMP
 find_package(OpenMP REQUIRED)
 
-# OpenCV
-find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS})
-
 # Includes
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
@@ -22,18 +18,14 @@ set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89 90)
 # ======================
 
 # Serial C++
-add_executable(fsh_serial_cpp src/serial.cpp lib/ppm.cpp)
-target_link_libraries(fsh_serial_cpp PRIVATE OpenMP::OpenMP_CXX)
-
-# Serial C
-add_executable(fsh_serial_c src/serial.c)
-target_link_libraries(fsh_serial_c PRIVATE ${OpenCV_LIBS} m)
+add_executable(serial_cpp src/serial.cpp lib/ppm.cpp)
+target_link_libraries(serial_cpp PRIVATE OpenMP::OpenMP_CXX)
 
 # OpenMP
-add_executable(fsh_omp src/omp.cpp lib/ppm.cpp)
-target_link_libraries(fsh_omp PRIVATE OpenMP::OpenMP_CXX)
+add_executable(omp src/omp.cpp lib/ppm.cpp)
+target_link_libraries(omp PRIVATE OpenMP::OpenMP_CXX)
 
 # CUDA
-add_executable(fsh_cuda src/cuda.cu lib/ppm.cpp)
-target_link_libraries(fsh_cuda PRIVATE OpenMP::OpenMP_CXX ${OpenCV_LIBS})
-set_target_properties(fsh_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+add_executable(cuda src/cuda.cu lib/ppm.cpp)
+target_link_libraries(cuda PRIVATE OpenMP::OpenMP_CXX ${OpenCV_LIBS})
+set_target_properties(cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
