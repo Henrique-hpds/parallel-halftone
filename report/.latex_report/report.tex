@@ -7,7 +7,6 @@
 \usepackage{hyperref}                 % Para links e referências clicáveis
 \usepackage[margin=0.5in]{geometry}   % Para ajustar margens
 \usepackage{graphicx}                 % Para imagens
-\usepackage{float}                    % Para usar [H] nas tabelas
 \usepackage{algorithm}                % Para ambiente de algoritmo
 \usepackage{algorithmic}              % Para pseudocódigo
 \usepackage{xcolor}                   % Para colorir blocos de código
@@ -16,8 +15,12 @@
 \usepackage{pgfplots}                 % Para gráficos
 \usepackage{caption}                  % Para \caption em figuras
 \usepackage{subcaption}               % Para subfiguras com \begin{subfigure}
-\usepackage{float}                    % Para o modificador [H]
+\usepackage{float}        % Para usar [H] com \begin{table}[H]
+\usepackage{multirow}     % Para usar \multirow em tabelas
+\usepackage{booktabs}     % (opcional) para melhor aparência das tabelas
     
+
+
 \hypersetup{
     colorlinks=true,
     linkcolor=black,
