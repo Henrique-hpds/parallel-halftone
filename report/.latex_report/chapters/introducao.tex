@@ -1,4 +1,4 @@
-A técnica de meios tons (\textit{halftone}) consiste na redução de uma imagem monocromática de 256 níveis de cinza para pixels brancos e pretos, de forma que a imagem resultante fique visualmente parecida com a entrada. Um exemplo de aplicação dessa técnica pode ser visto na Figura \ref{fig:meios_tons}, em que a imagem matém a estrutura visual, porém com menos níveis de informação. Isto é útil, por exemplo, em cenários em que deseja-se economizar armazenamento, com pouco prejuízo de perca de informação visual.
+A técnica de meios tons (\textit{halftone}) consiste na redução de uma imagem monocromática de 256 níveis de cinza para pixels brancos e pretos, de forma que a imagem resultante fique visualmente parecida com a entrada. Um exemplo de aplicação dessa técnica pode ser visto na Figura \ref{fig:meios_tons}, em que a imagem matém a estrutura visual, porém com menos níveis de informação. Isto é útil, por exemplo, em cenários em que deseja-se economizar armazenamento, com pouco prejuízo de perca de informação visual. Este método também pode ser utilizado em imagens coloridas, onde a técnica é aplicada separadamente em cada canal de cor.
 
 \begin{figure}[H]
     \centering
@@ -18,4 +18,4 @@ A técnica de meios tons (\textit{halftone}) consiste na redução de uma imagem
 
 O presente trabalho tem como objetivo a paralelização de algoritmos de meios tons baseados em difusão de erro. A difusão de erro é uma técnica que distribui o erro de quantização dos pixels vizinhos, permitindo uma melhor representação visual da imagem original. A paralelização desses algoritmos pode melhorar significativamente o desempenho, especialmente em imagens de alta resolução.
 
-Estabelece-se, portanto, como objetivo específico deste trabalho a comparação do desempenho entre as versões serial, OpenMP e CUDA de seis algoritmos consagrados na literatura: Floyd \& Steinberg, Steverson \& Arce, Burkes, Sierra, Stucki e Jarvis \& Judice \& Ninke. 
+Estabelece-se, portanto, como objetivo específico deste trabalho a comparação do desempenho entre as versões serial, OpenMP e CUDA de seis algoritmos consagrados na literatura: Floyd \& Steinberg; Steverson \& Arce; Burkes; Sierra; Stucki; e Jarvis Judice \& Ninke. 

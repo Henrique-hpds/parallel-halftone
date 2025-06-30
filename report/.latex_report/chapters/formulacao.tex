@@ -1,19 +1,41 @@
-\subsection{Formulação}
+\subsection{Difusão de Erro}
 \label{subsec:half:formulacao}
 
-Dada uma imagem de entrada A com $[a_{min}, ..., a_{max}]$ níveis de cinza, desejamos aplicar um algoritmo de halftone que construa uma nova imagem B preta e branca, de forma que a imagem transformada fique visualmente parecida com a entrada. Este processo pode ser aplicado tanto para imagens em preto e branco quanto para imagens coloridas, sendo que, no caso das coloridas, o algoritmo é executado separadamente para cada canal de cor.
-
-\textbf{\textcolor{red}{Este conteúdo está em desenvolvimento. Planejamos alterar a forma de percorrer a matriz para implementar um pipeline que permita que este código seja mais eficiente em GPUs.}}
+Dada uma imagem com 255 níveis de cinza, nosso objetivo é aplicar um algoritmo que gere uma nova imagem contendo apenas pixels pretos e brancos, de modo que o resultado final seja visualmente semelhante à imagem original. Esse procedimento pode ser realizado tanto em imagens monocromáticas quanto coloridas. No caso de imagens coloridas, o algoritmo é aplicado individualmente a cada canal de cor, convertendo o valor de cada pixel em cada canal para preto (0) ou para o valor máximo (255).
 
 
-A matriz de difusão armazena o peso que um determinado pixel possui na distribuição do erro. Para cada valor na matriz de difusão, atualizamos A de acordo com a \autoref{eq:matrizDifusao}, onde $x'$ e $y'$ representam cada coordenada da matriz de difusão. Os métodos que serão apresentados diferem apenas quanto à escolha da matriz de difusão.
+\vspace{0.5cm}
+
+\begin{algorithm}
+\caption{Algoritmo Geral de Halftone por Difusão de Erro}
+\begin{algorithmic}[1] % O [1] é para numerar as linhas
+\ForAll{canal $\in$ Imagem A}    
+    \For{x = 0 até m - 1}
+        \For{y = 0 até n - 1}
+            \If{A(x, y, canal) < 128}
+                \State B(x, y, canal) = 0
+            \Else
+                \State B(x, y, canal) = 255
+            \EndIf
+            \\
+            \State erro = A(x, y, canal) - B(x, y, canal)
+            \State DistribuirErro(A, matrizDifusao, erro)
+        \EndFor
+    \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+As matrizes de difusão de erro são estruturas que determinam como o erro de quantização de um pixel é distribuído para seus vizinhos ainda não processados. Cada método de difusão utiliza uma matriz diferente, cujos valores representam a fração do erro a ser repassada para cada pixel vizinho. O objetivo é espalhar o erro de forma controlada, minimizando artefatos visuais e mantendo a aparência da imagem original.
+
+Por exemplo, na matriz de Floyd e Steinberg, o erro é distribuído para quatro pixels vizinhos, com diferentes pesos, enquanto métodos como Jarvis, Judice e Ninke distribuem o erro para um número maior de vizinhos, suavizando ainda mais a transição dos tons. A escolha da matriz influencia diretamente o resultado visual do halftone e o desempenho do algoritmo.
 
 \begin{equation}
-A(x', \ y') \ = \ A(x', \ y') + (x', \ y') \ \cdot \ erro
+A(x, \ y) \ = \ matrizDifusao(x, \ y) + (x, \ y) \ \cdot \ erro
 \label{eq:matrizDifusao}
 \end{equation}
 
-No escopo deste projeto, serão abordados 6 métodos de difusão de erros distintos: Floyd e Steinberg; Stevenson e Arce; Burkes; Sierra; Stucki; e Jarvis, Judice e Ninke. As suas respectivas matrizes de difusão de erro estão apresentadas nas Tabelas~\ref{tab:floyd} a~\ref{tab:jjn}, onde $f(x, y)$ corresponde a $A(x, y, canal)$.
+Neste projeto, analisamos seis métodos clássicos de difusão de erro: Floyd e Steinberg, Stevenson e Arce, Burkes, Sierra, Stucki e Jarvis, Judice e Ninke. As matrizes de difusão associadas a cada método estão apresentadas nas Tabelas~\ref{tab:floyd} a~\ref{tab:jjn}, onde $f(x, y)$ representa o pixel corrente $A(x, y, canal)$. Cada matriz define como o erro de quantização é distribuído entre os vizinhos, influenciando diretamente o resultado visual do halftone.
 
 % Floyd e Steinberg
 \begin{table}[H]
@@ -105,10 +127,12 @@ No escopo deste projeto, serão abordados 6 métodos de difusão de erros distin
 \label{tab:jjn}
 \end{table}
 
-\subsection{Implementação}
+\subsection{Difusão de Erro Estocástica}
 
-\subsubsection{Execução}
+O método estocástico de difusão de erro introduz um elemento de aleatoriedade no processo tradicional de dithering. Diferente do método determinístico, que distribui o erro de quantização com base em uma matriz fixa de pesos, o método estocástico modifica a quantidade de erro difundido com base em um fator aleatório. Essa abordagem visa reduzir padrões visuais repetitivos e suavizar artefatos que podem surgir em regiões uniformes da imagem.
 
-O código referente à implementação do halftone pode ser encontrado em \textit{1\_halftoning.py}, recebendo como parâmetro no terminal o caminho até a entrada. O programa aceita mais de uma imagem de entrada, basta passar os respectivos caminhos em sequência.  
-
-\vspace{0.5cm}
+A implementação consiste em adicionar um ruído aleatório controlado ao valor do erro antes de sua distribuição. Formalmente, seja $e$ o erro de quantização de um pixel, e $r \sim \mathcal{U}(-p, p)$ um valor extraído de uma distribuição uniforme, com $p \in [0,1]$ sendo um parâmetro de controle da aleatoriedade. O erro ajustado $e'$ é então dado por:
+\[
+e' = e \cdot (1 + r)
+\]
+Esse erro ajustado $e'$ é então distribuído normalmente conforme a matriz de difusão escolhida (por exemplo, Floyd-Steinberg), mantendo a estrutura do algoritmo original. O valor de $p$ pode ser ajustado para controlar a intensidade da estocasticidade. Valores menores de $p$ resultam em comportamento mais próximo ao determinístico, enquanto valores maiores aumentam a variação aleatória.
