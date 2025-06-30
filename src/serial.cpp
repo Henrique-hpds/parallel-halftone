@@ -4,11 +4,13 @@
 #include <cstring>
 #include <random>
 #include <omp.h>
+#include <map>
 #include "ppm.hpp"
+#include "method.hpp"
 
 #define DEFAULT_P 0.5f
 
-void apply_floyd_steinberg_serial(float* image, int width, int height) {
+void apply_error_diffusion_serial(float* image, int width, int height, const std::map<std::pair<int, int>, float>& weights) {
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             int idx = y * width + x;
@@ -17,19 +19,23 @@ void apply_floyd_steinberg_serial(float* image, int width, int height) {
             float quant_error = old_pixel - new_pixel;
             image[idx] = new_pixel;
 
-            if (x + 1 < width)
-                image[y * width + (x + 1)] += quant_error * 7.0f / 16.0f;
-            if (x - 1 >= 0 && y + 1 < height)
-                image[(y + 1) * width + (x - 1)] += quant_error * 3.0f / 16.0f;
-            if (y + 1 < height)
-                image[(y + 1) * width + x] += quant_error * 5.0f / 16.0f;
-            if (x + 1 < width && y + 1 < height)
-                image[(y + 1) * width + (x + 1)] += quant_error * 1.0f / 16.0f;
+            for (const auto& [offset, weight] : weights) {
+                int dx = offset.first;
+                int dy = offset.second;
+                int nx = x + dx;
+                int ny = y + dy;
+                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                    image[ny * width + nx] += quant_error * weight;
+                }
+            }
         }
     }
 }
 
-void apply_floyd_steinberg_stochastic_serial(float* image, int width, int height, float p) {
+void apply_stochastic_error_diffusion_serial(
+    float* image, int width, int height, float p,
+    const std::map<std::pair<int, int>, float>& weights)
+{
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(-1.0, 1.0);
@@ -39,42 +45,36 @@ void apply_floyd_steinberg_stochastic_serial(float* image, int width, int height
             int idx = y * width + x;
             float old_pixel = image[idx];
             float new_pixel = old_pixel < 0.5f ? 0.0f : 1.0f;
-            float error = old_pixel - new_pixel;
+            float quant_error = old_pixel - new_pixel;
             image[idx] = new_pixel;
 
-            float e1 = 7.0f / 16.0f, e2 = 5.0f / 16.0f, e3 = 3.0f / 16.0f, e4 = 1.0f / 16.0f;
-
-            float r1 = dis(gen) * (5.0f / 16.0f);
-            float r2 = dis(gen) * (1.0f / 16.0f);
-            e1 += p * r1;
-            e2 -= p * r1;
-            e3 += p * r2;
-            e4 -= p * r2;
-
-            if (x + 1 < width)
-                image[y * width + (x + 1)] += error * e1;
-            if (x - 1 >= 0 && y + 1 < height)
-                image[(y + 1) * width + (x - 1)] += error * e3;
-            if (y + 1 < height)
-                image[(y + 1) * width + x] += error * e2;
-            if (x + 1 < width && y + 1 < height)
-                image[(y + 1) * width + (x + 1)] += error * e4;
+            for (const auto& [offset, weight] : weights) {
+                int dx = offset.first;
+                int dy = offset.second;
+                int nx = x + dx;
+                int ny = y + dy;
+                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                    float noise = dis(gen) * weight;
+                    image[ny * width + nx] += quant_error * (weight + p * noise);
+                }
+            }
         }
     }
 }
 
-void process_channel_serial(float* channel, int width, int height, bool stochastic, float p) {
+void process_channel_serial(float* channel, int width, int height, bool stochastic, float p, const std::map<std::pair<int, int>, float>& weights) {
     if (stochastic) {
-        apply_floyd_steinberg_stochastic_serial(channel, width, height, p);
+        apply_stochastic_error_diffusion_serial(channel, width, height, p, weights);
     } else {
-        apply_floyd_steinberg_serial(channel, width, height);
+        apply_error_diffusion_serial(channel, width, height, weights);
     }
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <input.ppm> <output.ppm> [p=0.5] [stochastic=1] [-g]" << std::endl;
+    if (argc < 4) {
+        std::cerr << "Usage: " << argv[0] << " <input.ppm> <output.ppm> <method> [p=0.5] [stochastic=1] [-g]" << std::endl;
         std::cerr << "Options:" << std::endl;
+        std::cerr << "  method:     Error diffusion method (FloydSteinberg, StevensonArce, Burkes, Sierra, Stucki, JarvisJudiceNinke)" << std::endl;
         std::cerr << "  p:          Noise parameter for stochastic dithering (default: 0.5)" << std::endl;
         std::cerr << "  stochastic: Use stochastic dithering (1) or standard (0) (default: 1)" << std::endl;
         std::cerr << "  -g:         Convert to grayscale before processing" << std::endl;
@@ -83,19 +83,22 @@ int main(int argc, char* argv[]) {
 
     const char* input_filename = argv[1];
     const char* output_filename = argv[2];
+    std::string method_name = argv[3];
     float p = DEFAULT_P;
     bool stochastic = true;
     bool grayscale = false;
 
-    for (int i = 3; i < argc; i++) {
+    for (int i = 4; i < argc; i++) {
         if (strcmp(argv[i], "-g") == 0) {
             grayscale = true;
-        } else if (i == 3 && argv[i][0] != '-') {
-            p = atof(argv[i]);
         } else if (i == 4 && argv[i][0] != '-') {
+            p = atof(argv[i]);
+        } else if (i == 5 && argv[i][0] != '-') {
             stochastic = atoi(argv[i]) != 0;
         }
     }
+
+    const auto& weights = get_method(method_name);
 
     PPMImage* img = readPPM(input_filename);
     if (!img) {
@@ -115,7 +118,7 @@ int main(int argc, char* argv[]) {
 
         double start = omp_get_wtime();
 
-        process_channel_serial(gray.data(), width, height, stochastic, p);
+        process_channel_serial(gray.data(), width, height, stochastic, p, weights);
 
         double end = omp_get_wtime();
         std::cout << "Serial execution time: " << (end - start) * 1000 << " ms" << std::endl;
@@ -136,9 +139,9 @@ int main(int argc, char* argv[]) {
 
         double start = omp_get_wtime();
 
-        process_channel_serial(R.data(), width, height, stochastic, p);
-        process_channel_serial(G.data(), width, height, stochastic, p);
-        process_channel_serial(B.data(), width, height, stochastic, p);
+        process_channel_serial(R.data(), width, height, stochastic, p, weights);
+        process_channel_serial(G.data(), width, height, stochastic, p, weights);
+        process_channel_serial(B.data(), width, height, stochastic, p, weights);
 
         double end = omp_get_wtime();
         std::cout << "Serial execution time: " << (end - start) * 1000 << " ms" << std::endl;

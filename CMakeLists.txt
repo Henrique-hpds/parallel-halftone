@@ -11,14 +11,14 @@ find_package(OpenMP REQUIRED)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # CUDA architectures (T4 = compute_75)
-set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89 90)
+set(CMAKE_CUDA_ARCHITECTURES 61 75 80 86 89 90)
 
 # ======================
 # Executáveis
 # ======================
 
 # Serial C++
-add_executable(serial_cpp src/serial.cpp lib/ppm.cpp)
+add_executable(serial_cpp src/serial.cpp lib/ppm.cpp lib/method.cpp)
 target_link_libraries(serial_cpp PRIVATE OpenMP::OpenMP_CXX)
 
 # OpenMP
