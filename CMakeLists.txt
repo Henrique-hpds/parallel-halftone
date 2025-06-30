@@ -22,10 +22,10 @@ add_executable(serial_cpp src/serial.cpp lib/ppm.cpp lib/method.cpp)
 target_link_libraries(serial_cpp PRIVATE OpenMP::OpenMP_CXX)
 
 # OpenMP
-add_executable(omp src/omp.cpp lib/ppm.cpp)
+add_executable(omp src/omp.cpp lib/ppm.cpp lib/method.cpp)
 target_link_libraries(omp PRIVATE OpenMP::OpenMP_CXX)
 
 # CUDA
-add_executable(cuda src/cuda.cu lib/ppm.cpp)
+add_executable(cuda src/cuda.cu lib/ppm.cpp lib/method.cpp)
 target_link_libraries(cuda PRIVATE OpenMP::OpenMP_CXX ${OpenCV_LIBS})
 set_target_properties(cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
