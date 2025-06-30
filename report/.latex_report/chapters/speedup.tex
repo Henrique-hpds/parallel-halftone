@@ -22,8 +22,8 @@ Os resultados obtidos estão destacados nas Tabelas~\ref{tab:speedup_methods} e~
 \label{tab:speedup_methods}
 \begin{tabular}{|c|c|c|c|c|c|}
 \hline
-\textbf{Método} & \textbf{Serial (s)} & \textbf{OpenMP (s)} & \textbf{CUDA (s)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
-FloydSteinberg & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+\textbf{Método} & \textbf{Serial (ms)} & \textbf{OpenMP (ms)} & \textbf{CUDA (ms)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
+FloydSteinberg & $21.75 \pm 51.95$ & $11.92 \pm 15.31$ & $150.44 \pm 324.05$ & $1.8$ & $0.14$ \\ \hline
 StevensonArce & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
 Burkes & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
 Sierra & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
@@ -38,10 +38,11 @@ JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{r
 \label{tab:speedup_sizes}
 \begin{tabular}{|c|c|c|c|c|c|}
 \hline
-\textbf{Tamanho da Imagem} & \textbf{Serial (s)} & \textbf{OpenMP (s)} & \textbf{CUDA (s)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
-800x600 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
-1280x720 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
-1920x1080 & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+\textbf{Tamanho da Imagem} & \textbf{Serial (ms)} & \textbf{OpenMP (ms)} & \textbf{CUDA (ms)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
+Small & $0.75 \pm 0.13$  & $3.13 \pm 4.03$ & $9.32 \pm 1.28$ & $0.24$ & $0.08$ \\ \hline
+Medium & $3.59 \pm 0.20$& $7.56 \pm 4.65$ & $33.76 \pm 2.20$ & $0.47$ & $0.11$ \\ \hline
+Large & $6.52 \pm 3.56$ & $8.39 \pm 4.90$ & $60.47 \pm 27.94$ & $0.77$ & $0.11$ \\ \hline
+Extra Large & $59.39 \pm 83.69$ & $21.93 \pm 24.45$ & $388.36 \pm 519.05$ & $2.71$ & $0.15$ \\ \hline
 \end{tabular}
 \end{table}
 
@@ -106,6 +107,11 @@ JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
     \text{\color{red}Conferir se a implementacao do estocástico está correta}
 
     Os resultados obtidos com o método estocástico foram considerados satisfatórios. Apesar das variações introduzidas no processo de dithering, a qualidade visual das imagens geradas permaneceu consistente com os objetivos do experimento. A Figura~\ref{fig:comparison_images} ilustra que as diferenças visuais entre as imagens processadas com e sem o método estocástico são mínimas, reforçando a validade do uso dessa abordagem nos experimentos realizados.
+
+
+    % Talvez seja interessante criar uma tabela com os resultados de tempos,
+    % e após isso, criar uma outra tabela com os resultados do speedup,
+    % considerando a média total de todos os métodos.
 
     \begin{table}[H]
     \centering
