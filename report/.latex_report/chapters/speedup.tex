@@ -23,7 +23,7 @@ Os resultados obtidos estão destacados nas Tabelas~\ref{tab:speedup_methods} e~
 \begin{tabular}{|c|c|c|c|c|c|}
 \hline
 \textbf{Método} & \textbf{Serial (ms)} & \textbf{OpenMP (ms)} & \textbf{CUDA (ms)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
-FloydSteinberg & $21.75 \pm 51.95$ & $11.92 \pm 15.31$ & $150.44 \pm 324.05$ & $1.8$ & $0.14$ \\ \hline
+FloydSteinberg & $126.52 \pm 301.72$ & $25.08 \pm 47.89$ & $146.27 \pm 317.29$ & $5.04 \pm 15.41$ & $0.86 \pm 2.79$ \\ \hline
 StevensonArce & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
 Burkes & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
 Sierra & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
@@ -39,10 +39,10 @@ JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{r
 \begin{tabular}{|c|c|c|c|c|c|}
 \hline
 \textbf{Tamanho da Imagem} & \textbf{Serial (ms)} & \textbf{OpenMP (ms)} & \textbf{CUDA (ms)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
-Small & $0.75 \pm 0.13$  & $3.13 \pm 4.03$ & $9.32 \pm 1.28$ & $0.24$ & $0.08$ \\ \hline
-Medium & $3.59 \pm 0.20$& $7.56 \pm 4.65$ & $33.76 \pm 2.20$ & $0.47$ & $0.11$ \\ \hline
-Large & $6.52 \pm 3.56$ & $8.39 \pm 4.90$ & $60.47 \pm 27.94$ & $0.77$ & $0.11$ \\ \hline
-Extra Large & $59.39 \pm 83.69$ & $21.93 \pm 24.45$ & $388.36 \pm 519.05$ & $2.71$ & $0.15$ \\ \hline
+Small & $4.57 \pm 0.78$  & $3.81 \pm 2.81$ & $7.76 \pm 0.95$ & $1.20 \pm 0.91$ & $0.59 \pm 0.12$ \\ \hline
+Medium & $21.20 \pm 0.78$& $7.71 \pm 3.25$ & $30.65 \pm 2.33$ & $2.75 \pm 1.16$ & $0.69 \pm 0.08$ \\ \hline
+Large & $37.90 \pm 19.62$ & $10.66 \pm 4.04$ & $58.64 \pm 26.64$ & $3.56 \pm 2.06$ & $0.65 \pm 0.45$ \\ \hline
+Extra Large & $345.02 \pm 486.16$ & $61.30 \pm 75.79$ & $380.57 \pm 507.17$ & $5.63 \pm 8.30$ & $0.91 \pm 1.76$ \\ \hline
 \end{tabular}
 \end{table}
 
@@ -108,26 +108,45 @@ JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
 
     Os resultados obtidos com o método estocástico foram considerados satisfatórios. Apesar das variações introduzidas no processo de dithering, a qualidade visual das imagens geradas permaneceu consistente com os objetivos do experimento. A Figura~\ref{fig:comparison_images} ilustra que as diferenças visuais entre as imagens processadas com e sem o método estocástico são mínimas, reforçando a validade do uso dessa abordagem nos experimentos realizados.
 
+    Diferente de antes, vamos apresentar os resultados sem levar em consideração à incerteza associada, a fim de evitar a redundância de informação sobre as diferenças dos tamanhos de imagens. É aceitável que os resultados sejam apresentados sem considerar a incerteza, uma vez que o foco é comparar os métodos de dithering e suas implementações paralelas de forma geral. 
 
     % Talvez seja interessante criar uma tabela com os resultados de tempos,
     % e após isso, criar uma outra tabela com os resultados do speedup,
     % considerando a média total de todos os métodos.
-
-    \begin{table}[H]
+% Tabela de tempos absolutos para o método estocástico
+\begin{table}[H]
     \centering
-    \caption{Resultados de Speedup para o Método Estocástico}
-    \label{tab:speedup_stochastic}
-    \begin{tabular}{|c|c|c|c|c|c|}
+    \caption{Tempos Médios de Execução para o Método Estocástico}
+    \label{tab:tempos_stochastic}
+    \begin{tabular}{|c|c|c|c|}
     \hline
-    \textbf{Método} & \textbf{Serial (s)} & \textbf{OpenMP (s)} & \textbf{CUDA (s)} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
-    FloydSteinberg & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
-    StevensonArce & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
-    Burkes & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
-    Sierra & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
-    Stucki & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
-    JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    \textbf{Método} & \textbf{Serial (s)} & \textbf{OpenMP (s)} & \textbf{CUDA (s)} \\ \hline
+    FloydSteinberg & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    StevensonArce & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Burkes & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Sierra & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Stucki & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
     \end{tabular}
-    \end{table}
+\end{table}
+
+    Como o tempo de execução do método estocástico do serial foi muito maior que a implementação comum, vamos utilizar a implementação não estocástica como base para o cálculo do Speedup e Eficiência. 
+% Tabela de speedup para o método estocástico
+\begin{table}[H]
+    \centering
+    \caption{Speedup para o Método Estocástico}
+    \label{tab:speedup_stochastic}
+    \begin{tabular}{|c|c|c|}
+    \hline
+    \textbf{Método} & \textbf{Speedup OpenMP} & \textbf{Speedup CUDA} \\ \hline
+    FloydSteinberg & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    StevensonArce & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Burkes & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Sierra & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    Stucki & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    JarvisJudiceNinke & \textcolor{red}{x.xx} & \textcolor{red}{x.xx} \\ \hline
+    \end{tabular}
+\end{table}
 
     \begin{table}[H]
     \centering
