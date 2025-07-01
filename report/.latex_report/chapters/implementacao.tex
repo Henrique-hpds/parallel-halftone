@@ -2,7 +2,14 @@ Neste capítulo, apresentamos as três versões do código desenvolvidas para fi
 
 \subsection{Versão Serial}
 
-    A versão serial do código, localizada no arquivo \texttt{serial.cpp}, foi implementada como ponto de partida para o desenvolvimento das versões paralelas. Nesta implementação, o algoritmo é executado de forma sequencial, processando os dados de entrada um elemento por vez. Essa abordagem é simples e direta, mas não aproveita os recursos de paralelismo disponíveis em arquiteturas modernas.
+    A versão serial do código, localizada no arquivo \texttt{serial.cpp}, foi implementada como ponto de partida para o desenvolvimento das versões paralelas. Nesta implementação, o algoritmo é executado de forma sequencial, processando os dados de entrada um elemento por vez. Essa abordagem é simples e direta, mas não aproveita os recursos de paralelismo disponíveis em arquiteturas modernas. A figura \ref{fig:serial_print} ilustra a função principal de difusão de erro na versão serial, onde cada pixel é processado individualmente, aplicando a técnica de meios-tons com base no erro de quantização.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{figures/serial_print.png}
+        \caption{Função principal de difusão de erro na versão serial.}
+        \label{fig:serial_print}
+    \end{figure}
 
     O código foi estruturado para ser claro e modular, facilitando a compreensão e a posterior paralelização. Ele realiza as seguintes etapas principais:
     \begin{itemize}
@@ -11,19 +18,56 @@ Neste capítulo, apresentamos as três versões do código desenvolvidas para fi
         \item Escrita dos resultados no arquivo de saída.
     \end{itemize}
 
-    O algoritmo de difusão de erro utilizado na versão serial é configurado para suportar diferentes métodos de dithering, como Floyd-Steinberg, Burkes, Sierra, entre outros. A escolha do método é feita com base em um parâmetro de entrada, permitindo flexibilidade na execução.
-
-    Essa versão serve como base para medir o desempenho inicial e comparar os ganhos obtidos com as versões paralelas. O código completo da implementação pode ser encontrado abaixo:
+    O algoritmo de difusão de erro utilizado na versão serial é configurado para suportar todos os métodos descritos na~\autoref{subsec:half:err_dif}. A escolha do método é feita com base em um parâmetro de entrada, permitindo flexibilidade na execução. Essa versão serve como base para medir o desempenho inicial e comparar os ganhos obtidos com as versões paralelas.
 
 \subsection{Versão Paralela com OpenMP}
 
-    A versão paralela utilizando OpenMP foi desenvolvida a partir da versão serial, com o objetivo de explorar o paralelismo em CPUs multicore. O código-fonte desta versão é essencialmente o mesmo da versão serial, diferindo apenas pela inclusão de diretivas de paralelização do OpenMP, que são ativadas em tempo de compilação. Os resultados e o impacto dessas alterações serão discutidos na \autoref{sec:speedup}.
+    A versão paralela utilizando OpenMP, implementada no arquivo \texttt{omp.cpp}, foi desenvolvida a partir da versão serial com o objetivo de explorar o paralelismo disponível em CPUs multicore. Nesta implementação, o processamento dos pixels é realizado de forma concorrente, utilizando diretivas OpenMP para paralelizar os principais laços do algoritmo. Isso permite uma redução significativa no tempo de execução, especialmente para imagens de maior resolução.
+
+    O código mantém a estrutura modular da versão serial, facilitando a manutenção e a comparação entre as abordagens. Além disso, a versão OpenMP suporta tanto o processamento de imagens em escala de cinza quanto coloridas, aplicando a difusão de erro separadamente em cada canal de cor. A figura \ref{fig:omp_print} ilustra a função principal de difusão de erro na versão OpenMP.
+
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{figures/omp_print.png}
+        \caption{Função principal de difusão de erro na versão OpenMP.}
+        \label{fig:omp_print}
+    \end{figure}
+
+    Novamente, o modo de difusão pode ser selecionado por meio dos parâmetros de entrada. O desempenho e o impacto visual da versão OpenMP são discutidos em detalhes na \autoref{sec:speedup}.
 
 \subsection{Versão em CUDA}
 
-    A versão em CUDA, que será implementada no futuro, tem como objetivo explorar o paralelismo massivo oferecido por GPUs. Esta subseção será preenchida com os detalhes da implementação assim que o código estiver concluído.
+    A versão CUDA, implementada no arquivo \texttt{cuda.cu}, foi desenvolvida para explorar o paralelismo massivo oferecido por GPUs. Assim como nas versões anteriores, o código é capaz de processar imagens em escala de cinza ou coloridas, aplicando a difusão de erro separadamente em cada canal de cor.
 
-    \vspace{2cm} % Espaço em branco para a futura explicação da versão CUDA.
+    Nesta implementação, o processamento dos pixels é realizado de forma paralela ao longo das diagonais da imagem, garantindo que a propagação do erro respeite as dependências espaciais do algoritmo. Cada thread da GPU é responsável por processar um pixel em uma determinada diagonal, e a difusão do erro para os vizinhos é feita utilizando operações atômicas para evitar condições de corrida.
+
+    As principais etapas da versão CUDA são:
+    \begin{itemize}
+        \item Leitura dos dados de entrada e transferência da imagem para a memória da GPU.
+        \item Processamento paralelo dos pixels ao longo das diagonais, aplicando a técnica de meios-tons com difusão de erro.
+        \item Transferência dos resultados da GPU de volta para a memória do host.
+        \item Escrita dos resultados no arquivo de saída.
+    \end{itemize}
+
+    As \autoref{fig:cuda_print1} e \ref{fig:cuda_print2} mostram, respectivamente, o \textit{kernel} de processamento de diagonais e a função principal de difusão de erro na versão CUDA.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{figures/cuda_print1.png}
+        \caption{Função principal de difusão de erro na versão CUDA.}
+        \label{fig:cuda_print1}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{figures/cuda_print2.png}
+        \caption{Função principal de difusão de erro na versão CUDA.}
+        \label{fig:cuda_print2}
+    \end{figure}
+
+
+    O método de difusão de erro utilizado pode ser selecionado por parâmetro de entrada, assim como nas demais versões. O desempenho e a qualidade visual dos resultados obtidos com a versão CUDA são discutidos na \autoref{sec:speedup}.
 
 
 \subsection{Implementação de Métodos Estocásticos}
@@ -48,48 +92,4 @@ Neste capítulo, apresentamos as três versões do código desenvolvidas para fi
     A análise detalhada dos resultados obtidos com os métodos estocásticos será apresentada na \autoref{sec:speedup}, onde compararemos a qualidade visual e o desempenho em relação às outras versões do código.
 
 
-    \subsection{Análise de WSNR}
-
-        Para avaliar a qualidade das imagens processadas pelas diferentes versões do código, utilizamos o script \texttt{wsnr.py}, que calcula a métrica WSNR (Weighted Signal-to-Noise Ratio). Essa métrica é amplamente utilizada para medir a qualidade de imagens processadas, levando em consideração o ruído introduzido durante o processamento.
-
-        A seguir, apresentamos os resultados obtidos para cada método (serial, OpenMP e CUDA), organizados por tamanho de imagem:
-
-        \subsubsection*{Tabela de Resultados WSNR por Método e Tamanho de Imagem}
-
-        \begin{table}[H]
-            \centering
-            \begin{tabular}{|c|c|c|c|c|}
-                \hline
-                \textbf{Tamanho} & \textbf{Imagem} & \textbf{CUDA (dB)} & \textbf{OpenMP (dB)} & \textbf{Serial (dB)} \\ \hline
-                \multirow{2}{*}{Small} 
-                & small\_1 & 0.6595 & -0.1043 & -0.1279 \\ \cline{2-5}
-                & small\_2 & 1.1523 & 0.6237 & 0.5631 \\ \hline
-                \multirow{8}{*}{Medium} 
-                & medium\_1 & 1.2968 & 0.8956 & 0.9051 \\ \cline{2-5}
-                & medium\_2 & 1.2322 & 0.9434 & 0.8777 \\ \cline{2-5}
-                & medium\_3 & 0.6089 & 0.2502 & 0.2566 \\ \cline{2-5}
-                & medium\_4 & 0.7146 & 0.3194 & 0.2924 \\ \cline{2-5}
-                & medium\_5 & 1.7778 & 0.7717 & 0.7879 \\ \cline{2-5}
-                & medium\_6 & 1.3159 & 0.8904 & 0.8921 \\ \cline{2-5}
-                & medium\_7 & 1.2963 & 0.7031 & 0.6980 \\ \cline{2-5}
-                & medium\_8 & -0.2986 & -0.8768 & -0.8693 \\ \hline
-                \multirow{5}{*}{Large} 
-                & large\_1 & 0.0847 & -0.0862 & -0.0905 \\ \cline{2-5}
-                & large\_2 & 1.6083 & 0.8550 & 0.8642 \\ \cline{2-5}
-                & large\_3 & 1.6087 & 0.8773 & 0.8754 \\ \cline{2-5}
-                & large\_4 & 0.7675 & 0.7062 & 0.6588 \\ \cline{2-5}
-                & large\_5 & -0.3377 & -0.8666 & -0.8857 \\ \hline
-                \multirow{7}{*}{Xlarge} 
-                & xlarge\_1 & 1.6322 & 0.8531 & 0.8586 \\ \cline{2-5}
-                & xlarge\_2 & 1.6904 & 0.9132 & 0.9014 \\ \cline{2-5}
-                & xlarge\_3 & 1.6817 & 0.8648 & 0.8632 \\ \cline{2-5}
-                & xlarge\_4 & 1.6876 & 0.9090 & 0.9010 \\ \cline{2-5}
-                & xlarge\_5 & 0.7856 & 0.4889 & 0.4997 \\ \cline{2-5}
-                & xlarge\_6 & 2.3256 & 1.3715 & 1.3500 \\ \cline{2-5}
-                & xlarge\_7 & 0.8412 & 0.1943 & 0.2099 \\ \hline
-                \multicolumn{2}{|c|}{\textbf{Média WSNR}} & \textbf{1.0969} & \textbf{0.5226} & \textbf{0.5128} \\ \hline
-            \end{tabular}
-            \caption{Resultados WSNR por Método e Tamanho de Imagem}
-        \end{table}
-        \subsubsection*{Interpretação dos Resultados}
-        A métrica WSNR indica a relação entre o sinal e o ruído introduzido no processamento das imagens. Valores mais altos de WSNR indicam menor degradação da qualidade da imagem. Observa-se que a versão CUDA apresenta a maior média de WSNR (1.0969 dB), seguida pela versão OpenMP (0.5226 dB) e pela versão serial (0.5128 dB). Isso sugere que a versão CUDA não apenas é mais eficiente em termos de desempenho, mas também preserva melhor a qualidade das imagens processadas.
+ 

@@ -1,65 +1,140 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/fH_qNtDu)
+# Projeto Final MC970 - Paralelização de Técnicas de Meios-Tons
 
-
-# Projeto: Paralelização da Técnica de Meios-Tons (Floyd-Steinberg)
-
-Este projeto implementa a técnica de dithering de Floyd-Steinberg para imagens PPM, com versões serial, paralela (OpenMP) e CUDA.
-
-## Códigos e Descrição
-
-### serial.cpp
-Implementação serial do algoritmo de Floyd-Steinberg, com opção estocástica.
-
-### omp.cpp
-Implementação paralela usando OpenMP, também com opção estocástica.
-
-### cuda.cu
-Implementação CUDA do algoritmo, com suporte a modo padrão e estocástico.
+Este projeto implementa algoritmos de meios-tons com difusão de erro em três versões: serial (C++), paralela com OpenMP (C++) e paralela com CUDA (C++/CUDA). Também inclui scripts Python para benchmarking e análise dos resultados.
 
 ---
 
-## Como rodar e exemplos de uso
+## 1. Pré-requisitos
 
-Todos os programas esperam imagens no formato PPM (P6).
+- **Linux** (recomendado)
+- **Compilador C++** (g++ >= 9)
+- **CUDA Toolkit** (para rodar a versão CUDA)
+- **Python 3.8+**
+- **CMake** (>= 3.10)
+- **make**
+- **pip** (>= 20)
+- **NVIDIA GPU** (para CUDA)
+- **Google Colab** (opcional, para rodar o notebook)
 
-### Parâmetros e flags
-- `<input.ppm>`: Imagem de entrada
-- `<output.ppm>`: Caminho para salvar a imagem de saída
-- `[p=0.5]`: (Opcional) Parâmetro de peso para o ruído estocástico (default: 0.5)
-- `[stochastic=1]`: (Opcional) 1 para modo estocástico, 0 para Floyd-Steinberg clássico (default: 1)
-- `-g`: (Opcional) Converte a imagem para escala de cinza antes de processar
+---
 
-### Exemplos Utilizados para execução
+## 2. Baixando o Projeto
 
-#### Serial
-```
-./serial ../img/vazio_roxo.ppm ../out/serial_normal.ppm 0.5 0
-./serial ../img/vazio_roxo.ppm ../out/serial_stochastic.ppm 0.5 1
-```
+Clone este repositório via ssh:
 
-#### OpenMP
-```
-./omp ../img/vazio_roxo.ppm ../out/omp_normal.ppm 0.5 0
-./omp ../img/vazio_roxo.ppm ../out/omp_stochastic.ppm 0.5 1
-```
-
-#### CUDA
-```
-./cuda ../img/vazio_roxo.ppm ../out/cuda_normal.ppm 5 0
-./cuda ../img/vazio_roxo.ppm ../out/cuda_stochastic.ppm 5 1
-```
-
-#### Opção para escala de cinza
-```
-./serial ../img/vazio_roxo.ppm ../out/serial_gray.ppm 0.5 1 -g
-./omp ../img/vazio_roxo.ppm ../out/omp_gray.ppm 0.5 1 -g
-./cuda ../img/vazio_roxo.ppm ../out/cuda_gray.ppm 0.5 1 -g
+```bash
+git clone git@github.com:mc970-25s1/final-project-paralelizacao-tecnica-de-meios-tons.git
+cd final-project-paralelizacao-tecnica-de-meios-tons
 ```
 
 ---
 
-## Observações
-- O parâmetro `p` controla a intensidade do ruído estocástico na difusão de erro.
-- O parâmetro `stochastic` ativa (`1`) ou desativa (`0`) o modo estocástico.
-- As imagens de saída são salvas no caminho especificado pelo usuário.
-- Para compilar, utilize o CMake fornecido no projeto.
+## 3. Instalando Dependências C++/CUDA
+
+No Ubuntu, rode:
+
+```bash
+sudo apt update
+sudo apt install build-essential cmake libomp-dev nvidia-cuda-toolkit
+```
+
+Certifique-se de seguir as orientações da nvidia para configurar o CUDA.
+---
+
+## 4. Compilando o Projeto
+
+Crie o diretório de build e compile:
+
+```bash
+cmake -S . -B build
+cmake --build build -j
+```
+
+Os executáveis serão gerados em `build/`.
+
+---
+
+## 5. Executando os Programas
+
+### Serial
+
+```bash
+./build/serial_cpp <input.ppm> <output.ppm> <method> [p=0.5] [stochastic=1] [-g]
+```
+
+### OpenMP
+
+```bash
+./build/omp <input.ppm> <output.ppm> <method> [p=0.5] [stochastic=1] [-g]
+```
+
+### CUDA
+
+```bash
+./build/cuda <input.ppm> <output.ppm> <method> [p=0.5] [stochastic=1] [-g]
+```
+
+**Parâmetros:**
+- `<input.ppm>`: Caminho para a imagem de entrada (formato PPM).
+- `<output.ppm>`: Caminho para a imagem de saída.
+- `<method>`: Método de difusão de erro (`FloydSteinberg`, `StevensonArce`, `Burkes`, `Sierra`, `Stucki`, `JarvisJudiceNinke`).
+- `[p]`: Parâmetro de ruído para dithering estocástico (opcional, padrão 0.5).
+- `[stochastic]`: 1 para estocástico, 0 para determinístico (opcional, padrão 1).
+- `[-g]`: Converte para escala de cinza antes de processar (opcional).
+
+**Exemplo:**
+
+```bash
+./build/omp img/ppm/teste.ppm out/teste_out.ppm FloydSteinberg 0.5 1 -g
+```
+
+---
+
+## 6. Ambiente Python para Benchmark e Análise
+
+### Criando o Ambiente Virtual
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### Instalando as Dependências
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**Se não houver um arquivo `requirements.txt`, instale manualmente:**
+
+```bash
+pip install pandas pillow matplotlib
+```
+
+---
+
+## 7. Rodando o Notebook Localmente ou no Google Colab
+
+1. Faça upload do projeto para o seu Google Drive.
+2. Abra o arquivo `colab-runner.ipynb` no Google Colab.
+3. Execute as células na ordem. O notebook monta o Google Drive, compila o projeto, executa os testes e gera relatórios de desempenho automaticamente.
+
+---
+
+## 8. Estrutura de Pastas
+
+- `src/` — Códigos-fonte C++/CUDA
+- `img/ppm/` — Imagens de entrada (PPM)
+- `out/` — Imagens de saída
+- `build/` — Executáveis compilados
+- `logs/` — Logs e relatórios de execução
+- `colab-runner.ipynb` — Notebook para automação e análise
+
+---
+
+## 9. Observações
+
+- Para rodar a versão CUDA, é necessário ter uma GPU NVIDIA compatível e drivers/CUDA instalados.
+- O notebook pode ser executado localmente ou no Colab, mas a versão CUDA só roda em ambientes com GPU NVIDIA.
+- As imagens de entrada devem estar no formato PPM.
