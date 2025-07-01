@@ -13,8 +13,27 @@ Nesta seção, apresentamos as métricas de Speedup obtidas durante os experimen
         \end{itemize}
 \end{itemize}
 
-Os resultados obtidos estão destacados nas Tabelas~\ref{tab:speedup_methods} e~\ref{tab:speedup_sizes}. Os campos em vermelho indicam os valores que ainda precisam ser preenchidos com os dados experimentais.
+Os resultados obtidos estão destacados nas Tabelas das subceções a seguir.
 
+\subsection{Ambiente de Teste}
+
+    O Benchmarkingfoi realizado em um sistema com as seguintes especificações:
+    \begin{itemize}
+        \item \textbf{Processador:} Intel Core i7-11800H
+        \item \textbf{Memória RAM:} 16 GB DDR4
+        \item \textbf{Placa de Vídeo:} NVIDIA GeForce RTX 3060 80W
+        \item \textbf{Versão do CUDA:} 12.9
+        \item \textbf{Driver NVIDIA:} 575.64
+        \item \textbf{Compilador C/C++:} GCC 15.1.1
+        \item \textbf{Versão do OpenMP:} 4.5
+        \item \textbf{Sistema Operacional:} Arch Linux (rolling release)
+        \item \textbf{Versão do kernel:} 6.15.4-arch2-1
+    \end{itemize}
+
+    Para a coleta de dados, utilizamos o \texttt{omp\_get\_wtime()} para medir o tempo de execução dos códigos. O método de dithering aplicado é passado via linha de comando (como especificado no README do projeto). Todos os dados foram coletados utilizando \textit{grayscale} ativado. O método de dithering base para medição de impacto de acordo com o tamanho da imagem é o \textit{FloydSteinberg}. As imagens utilizadas foram obtidas do repositório oficial do projeto, conforme descrito no README.
+
+    Organizamos um script de benchmarking, que executa cada imagem 5 vezes, onde conseguigmos alterar o método de dithering, flag de método estocástico e flag de escala de cinza. O script foi implementado em \texttt{colab-runner.ipynb} na raiz do repositório. 
+\subsection{Resultados}
 
 \begin{table}[H]
 \centering
@@ -32,6 +51,8 @@ JarvisJudiceNinke & $305.95 \pm 720.93$ & $56.04 \pm 124.03$ & $147.02 \pm 317.4
 \end{tabular}
 \end{table}
 
+A incerteza associada nos tempos de execução e no speedup foram bastante altas. Isso aconteceu pois na gama de testes realizados, as implementações receberam imagens de tamanhos variados (de small a xlarge). Por conta dessa imprecisão, a tabela \ref{tab:speedup_stochastic} não inclui as incertezas, contentando apenas os valores médios de Speedup.
+
 \begin{table}[H]
 \centering
 \caption{Resultados de Speedup por Tamanho de Imagem}
@@ -45,6 +66,8 @@ Large & $37.90 \pm 19.62$ & $10.66 \pm 4.04$ & $58.64 \pm 26.64$ & $3.56 \pm 2.0
 Extra Large & $345.02 \pm 486.16$ & $61.30 \pm 75.79$ & $380.57 \pm 507.17$ & $5.63 \pm 8.30$ & $0.91 \pm 1.76$ \\ \hline
 \end{tabular}
 \end{table}
+
+Quando analisamos um em uma escala mais controlada de tamanho de imagem, vemos que as incertezas diminuem, ressaltando a análise sobre a tabela anterior. Vemos que o CUDA não apresenta um bom speedup e uma Occupancy extremamente baixa, o que pode ser explicado pelo fato de que nessa implementação, o dado possui dependência espacial, ou seja, apresenta baixo paralelismo.
 
 
 \begin{table}[H]
@@ -107,8 +130,6 @@ Extra Large & 0.35 \\ \hline
         \label{fig:comparison_images}
     \end{figure}
 
-    \text{\color{red}Conferir se a implementacao do estocástico está correta}
-
     Os resultados obtidos com o método estocástico foram considerados satisfatórios. Apesar das variações introduzidas no processo de dithering, a qualidade visual das imagens geradas permaneceu consistente com os objetivos do experimento. A Figura~\ref{fig:comparison_images} ilustra que as diferenças visuais entre as imagens processadas com e sem o método estocástico são mínimas, reforçando a validade do uso dessa abordagem nos experimentos realizados.
 
     Diferente de antes, vamos apresentar os resultados sem levar em consideração à incerteza associada, a fim de evitar a redundância de informação sobre as diferenças dos tamanhos de imagens. É aceitável que os resultados sejam apresentados sem considerar a incerteza, uma vez que o foco é comparar os métodos de dithering e suas implementações paralelas de forma geral. 
@@ -166,6 +187,8 @@ Extra Large & 0.35 \\ \hline
     JarvisJudiceNinke & $0.07$ & $61.01$ \\ \hline
     \end{tabular}
     \end{table}
+
+    Vemos que a Occupancy aumentou significativamente, e com isso, o speedup obtido com o CUDA foi muito maior que as outras implementações.
 
    \subsection{Análise de WSNR}
 
