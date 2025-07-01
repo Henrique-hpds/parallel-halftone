@@ -129,7 +129,7 @@ Neste projeto, analisamos seis métodos clássicos de difusão de erro: Floyd e 
 
 \subsection{Difusão de Erro Estocástica}
 
-O método estocástico de difusão de erro introduz um elemento de aleatoriedade no processo tradicional de dithering. Diferente do método determinístico, que distribui o erro de quantização com base em uma matriz fixa de pesos, o método estocástico modifica a quantidade de erro difundido com base em um fator aleatório. Essa abordagem visa reduzir padrões visuais repetitivos e suavizar artefatos que podem surgir em regiões uniformes da imagem.
+O método estocástico de difusão de erro \cite{franchini2020automatic} introduz um elemento de aleatoriedade no processo tradicional de dithering. Diferente do método determinístico, que distribui o erro de quantização com base em uma matriz fixa de pesos, o método estocástico modifica a quantidade de erro difundido com base em um fator aleatório. Essa abordagem visa reduzir padrões visuais repetitivos e suavizar artefatos que podem surgir em regiões uniformes da imagem.
 
 A implementação consiste em adicionar um ruído aleatório controlado ao valor do erro antes de sua distribuição. Formalmente, seja $e$ o erro de quantização de um pixel, e $r \sim \mathcal{U}(-p, p)$ um valor extraído de uma distribuição uniforme, com $p \in [0,1]$ sendo um parâmetro de controle da aleatoriedade. O erro ajustado $e'$ é então dado por:
 \[

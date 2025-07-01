@@ -30,6 +30,8 @@ Os resultados obtidos estão destacados nas Tabelas das subceções a seguir.
         \item \textbf{Versão do kernel:} 6.15.4-arch2-1
     \end{itemize}
 
+    Especialmente na verão com OpenMP, como não foi específicado o número de threads, o código utilizou o número de núcleos lógiocs disponíveis pelo processador, que nesse ambiente de testes, foram 16.
+    
     Para a coleta de dados, utilizamos o \texttt{omp\_get\_wtime()} para medir o tempo de execução dos códigos. O método de dithering aplicado é passado via linha de comando (como especificado no README do projeto). Todos os dados foram coletados utilizando \textit{grayscale} ativado. O método de dithering base para medição de impacto de acordo com o tamanho da imagem é o \textit{FloydSteinberg}. As imagens utilizadas foram obtidas do repositório oficial do projeto, conforme descrito no README.
 
     Organizamos um script de benchmarking, que executa cada imagem 5 vezes, onde conseguigmos alterar o método de dithering, flag de método estocástico e flag de escala de cinza. O script foi implementado em \texttt{colab-runner.ipynb} na raiz do repositório. 
