@@ -39,6 +39,7 @@ sudo apt install build-essential cmake libomp-dev nvidia-cuda-toolkit
 ```
 
 Certifique-se de seguir as orientações da nvidia para configurar o CUDA.
+
 ---
 
 ## 4. Compilando o Projeto
