@@ -1,8 +1,7 @@
 \subsection{Difusão de Erro}
-\label{subsec:half:formulacao}
+\label{subsec:half:err_dif}
 
-Dada uma imagem com 255 níveis de cinza, nosso objetivo é aplicar um algoritmo que gere uma nova imagem contendo apenas pixels pretos e brancos, de modo que o resultado final seja visualmente semelhante à imagem original. Esse procedimento pode ser realizado tanto em imagens monocromáticas quanto coloridas. No caso de imagens coloridas, o algoritmo é aplicado individualmente a cada canal de cor, convertendo o valor de cada pixel em cada canal para preto (0) ou para o valor máximo (255).
-
+Dada uma imagem com 255 níveis de cinza, nosso objetivo é aplicar um algoritmo que gere uma nova imagem contendo apenas pixels pretos e brancos, de modo que o resultado final seja visualmente semelhante à imagem original. Esse procedimento pode ser realizado tanto em imagens monocromáticas quanto coloridas. No caso de imagens coloridas, o algoritmo é aplicado individualmente a cada canal de cor, convertendo o valor de cada pixel em cada canal para preto (0) ou para o valor máximo (255).  O procedimento geral pode ser encontrado no Algoritmo~\ref{alg:halftone}.
 
 \vspace{0.5cm}
 
@@ -24,6 +23,7 @@ Dada uma imagem com 255 níveis de cinza, nosso objetivo é aplicar um algoritmo
     \EndFor
 \EndFor
 \end{algorithmic}
+\label{alg:halftone}
 \end{algorithm}
 
 As matrizes de difusão de erro são estruturas que determinam como o erro de quantização de um pixel é distribuído para seus vizinhos ainda não processados. Cada método de difusão utiliza uma matriz diferente, cujos valores representam a fração do erro a ser repassada para cada pixel vizinho. O objetivo é espalhar o erro de forma controlada, minimizando artefatos visuais e mantendo a aparência da imagem original.
