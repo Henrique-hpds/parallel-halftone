@@ -107,12 +107,6 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**Se não houver um arquivo `requirements.txt`, instale manualmente:**
-
-```bash
-pip install pandas pillow matplotlib
-```
-
 ---
 
 ## 7. Rodando o Notebook Localmente ou no Google Colab
