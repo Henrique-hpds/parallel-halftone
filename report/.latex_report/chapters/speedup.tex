@@ -166,3 +166,49 @@ Extra Large & 0.35 \\ \hline
     JarvisJudiceNinke & $0.07$ & $61.01$ \\ \hline
     \end{tabular}
     \end{table}
+
+   \subsection{Análise de WSNR}
+
+        Para avaliar a qualidade das imagens processadas pelas diferentes versões do código, utilizamos o script \texttt{wsnr.py}, que calcula a métrica WSNR (Weighted Signal-to-Noise Ratio). Essa métrica é amplamente utilizada para medir a qualidade de imagens processadas, levando em consideração o ruído introduzido durante o processamento.
+
+        A seguir, apresentamos os resultados obtidos para cada método (serial, OpenMP e CUDA), organizados por tamanho de imagem:
+
+        \subsubsection*{Tabela de Resultados WSNR por Método e Tamanho de Imagem}
+
+        \begin{table}[H]
+            \centering
+            \begin{tabular}{|c|c|c|c|c|}
+                \hline
+                \textbf{Tamanho} & \textbf{Imagem} & \textbf{CUDA (dB)} & \textbf{OpenMP (dB)} & \textbf{Serial (dB)} \\ \hline
+                \multirow{2}{*}{Small} 
+                & small\_1 & 0.6595 & -0.1043 & -0.1279 \\ \cline{2-5}
+                & small\_2 & 1.1523 & 0.6237 & 0.5631 \\ \hline
+                \multirow{8}{*}{Medium} 
+                & medium\_1 & 1.2968 & 0.8956 & 0.9051 \\ \cline{2-5}
+                & medium\_2 & 1.2322 & 0.9434 & 0.8777 \\ \cline{2-5}
+                & medium\_3 & 0.6089 & 0.2502 & 0.2566 \\ \cline{2-5}
+                & medium\_4 & 0.7146 & 0.3194 & 0.2924 \\ \cline{2-5}
+                & medium\_5 & 1.7778 & 0.7717 & 0.7879 \\ \cline{2-5}
+                & medium\_6 & 1.3159 & 0.8904 & 0.8921 \\ \cline{2-5}
+                & medium\_7 & 1.2963 & 0.7031 & 0.6980 \\ \cline{2-5}
+                & medium\_8 & -0.2986 & -0.8768 & -0.8693 \\ \hline
+                \multirow{5}{*}{Large} 
+                & large\_1 & 0.0847 & -0.0862 & -0.0905 \\ \cline{2-5}
+                & large\_2 & 1.6083 & 0.8550 & 0.8642 \\ \cline{2-5}
+                & large\_3 & 1.6087 & 0.8773 & 0.8754 \\ \cline{2-5}
+                & large\_4 & 0.7675 & 0.7062 & 0.6588 \\ \cline{2-5}
+                & large\_5 & -0.3377 & -0.8666 & -0.8857 \\ \hline
+                \multirow{7}{*}{Xlarge} 
+                & xlarge\_1 & 1.6322 & 0.8531 & 0.8586 \\ \cline{2-5}
+                & xlarge\_2 & 1.6904 & 0.9132 & 0.9014 \\ \cline{2-5}
+                & xlarge\_3 & 1.6817 & 0.8648 & 0.8632 \\ \cline{2-5}
+                & xlarge\_4 & 1.6876 & 0.9090 & 0.9010 \\ \cline{2-5}
+                & xlarge\_5 & 0.7856 & 0.4889 & 0.4997 \\ \cline{2-5}
+                & xlarge\_6 & 2.3256 & 1.3715 & 1.3500 \\ \cline{2-5}
+                & xlarge\_7 & 0.8412 & 0.1943 & 0.2099 \\ \hline
+                \multicolumn{2}{|c|}{\textbf{Média WSNR}} & \textbf{1.0969} & \textbf{0.5226} & \textbf{0.5128} \\ \hline
+            \end{tabular}
+            \caption{Resultados WSNR por Método e Tamanho de Imagem}
+        \end{table}
+        \subsubsection*{Interpretação dos Resultados}
+        A métrica WSNR indica a relação entre o sinal e o ruído introduzido no processamento das imagens. Valores mais altos de WSNR indicam menor degradação da qualidade da imagem. Observa-se que a versão CUDA apresenta a maior média de WSNR (1.0969 dB), seguida pela versão OpenMP (0.5226 dB) e pela versão serial (0.5128 dB). Isso sugere que a versão CUDA não apenas é mais eficiente em termos de desempenho, mas também preserva melhor a qualidade das imagens processadas.
