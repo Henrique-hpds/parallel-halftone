@@ -136,9 +136,9 @@ pip install -r requirements.txt
 
 ## 10. Autores
 
-- **Henrique Parede de Souza** [Github](https://github.com/Henrique-hpds) [Linkedin](https://www.linkedin.com/in/henrique-parede-de-souza/)
-- **Raphael Salles Vitor de Souza** [Linkedin](https://www.linkedin.com/in/raphael-sv-souza/)
-- **Vinicius Patriarca Miranda Miguel** [Github](https://github.com/viniciuskant) [Linkedin](https://www.linkedin.com/in/vinicius-patriarca-miranda-miguel-01b568236/)
+- **Henrique Parede de Souza** [[Github](https://github.com/Henrique-hpds)] [[Linkedin](https://www.linkedin.com/in/henrique-parede-de-souza/)]
+- **Raphael Salles Vitor de Souza** [[Linkedin](https://www.linkedin.com/in/raphael-sv-souza/)]
+- **Vinicius Patriarca Miranda Miguel** [[Github](https://github.com/viniciuskant)] [[Linkedin](https://www.linkedin.com/in/vinicius-patriarca-miranda-miguel-01b568236/)]
 
 ## 11. Como citar
 
