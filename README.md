@@ -133,3 +133,21 @@ pip install -r requirements.txt
 - Para rodar a versão CUDA, é necessário ter uma GPU NVIDIA compatível e drivers/CUDA instalados.
 - O notebook pode ser executado localmente ou no Colab, mas a versão CUDA só roda em ambientes com GPU NVIDIA.
 - As imagens de entrada devem estar no formato PPM.
+
+## 10. Autores
+
+- **Henrique Parede de Souza** [Github](https://github.com/Henrique-hpds) [Linkedin](https://www.linkedin.com/in/henrique-parede-de-souza/)
+- **Raphael Salles Vitor de Souza** [Linkedin](https://www.linkedin.com/in/raphael-sv-souza/)
+- **Vinicius Patriarca Miranda Miguel** [Github](https://github.com/viniciuskant) [Linkedin](https://www.linkedin.com/in/vinicius-patriarca-miranda-miguel-01b568236/)
+
+## 11. Como citar
+
+```bibtex
+@software{Souza2025,
+  title    = "{complexity-of-UNO}",
+  author   = "Souza, Henrique Parede de and Souza, Raphael Salles Vitor de and Miguel, Vinicius Patriarca Miranda",
+  month    =  jun,
+  year     =  2025,
+  language = "pt"
+}
+```
