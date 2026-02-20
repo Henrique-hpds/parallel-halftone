@@ -143,11 +143,13 @@ pip install -r requirements.txt
 ## 11. Como citar
 
 ```bibtex
-@software{Souza2025,
-  title    = "{complexity-of-UNO}",
-  author   = "Souza, Henrique Parede de and Souza, Raphael Salles Vitor de and Miguel, Vinicius Patriarca Miranda",
-  month    =  jun,
+@software{Parede2025,
+  title    = "parallel-halftone: {CUDA} and {OpenMP} parallelization of
+              halftone algorithms commonly found in literature",
+  author   = "Parede, Henrique and Souza, Raphael Salles Vitor de and Miguel,
+              Vinicius Patriarca Miranda",
   year     =  2025,
+  url      = "https://github.com/Henrique-hpds/parallel-halftone",
   language = "pt"
 }
 ```
